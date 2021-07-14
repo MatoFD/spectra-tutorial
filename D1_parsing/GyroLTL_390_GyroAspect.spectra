@@ -1,0 +1,47 @@
+// Initial file contents for AspectLTL aspect file (*.altl)
+module GyroAspect
+		env {CLEAR, BLOCKED} distSense ;
+		env boolean isReady ;
+		sys {STP, FWD, BWD, TURN_LEFT, TURN_RIGHT} balancer ;
+		
+guarantee -- initial state
+	GInit: balancer=STP;
+	
+guarantee
+	GSafe1: G (!isReady -> balancer=STP);
+
+guarantee -- safety requirement
+	GSafe2: G ((distSense=BLOCKED & isReady) -> !(balancer=FWD));
+
+guarantee -- goal of gyro
+  GLive: GF (balancer=FWD);
+
+guarantee
+	GSafe3: G ((distSense=CLEAR & isReady) -> (balancer=FWD));
+
+guarantee
+	GSafe4: G ((balancer=FWD) -> next(!(balancer=TURN_RIGHT | balancer=TURN_LEFT)));
+
+guarantee
+	GSafe5: G ((distSense=BLOCKED & balancer=STP & isReady) -> next(!(balancer=STP)));
+
+assumption
+  APattern : respondsTo(!(balancer=FWD|balancer=STP),(distSense=CLEAR));
+
+guarantee
+  APatternBis : respondsTo(!(balancer=TURN_LEFT|balancer=TURN_RIGHT),(distSense=CLEAR));
+
+assumption
+  ALive: GF (isReady);
+	
+assumption
+	ASafe: G (isReady -> next(isReady));
+	
+assumption
+	AInit: !isReady;
+pattern respondsTo(trigger, response) {
+  var boolean responded;
+  responded;
+  G (next(responded) iff (response or responded and !trigger));
+  GF (responded);
+}
