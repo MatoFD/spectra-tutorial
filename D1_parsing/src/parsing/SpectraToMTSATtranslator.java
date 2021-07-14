@@ -1,7 +1,5 @@
 package parsing;
 
-import parsing.MyVar;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,7 +27,7 @@ import tau.smlab.syntech.spectragameinput.SpectraTranslationException;
  */
 public class SpectraToMTSATtranslator {
 
-	private static List<String> playerNames = Arrays.asList("aux","sys","env");
+	private static List<String> playerNames = Arrays.asList("sys","aux","env");
 	
 	public static void main(String[] args) throws ErrorsInSpectraException, SpectraTranslationException {
 
@@ -41,30 +39,30 @@ public class SpectraToMTSATtranslator {
 		// parse (via Xtext) and translate to abstract syntax (Xtext independent)
 		GameInput gi = sip.getGameInput(specPath);
 
-		System.out.println("Printing vars and constraints of environment player:");
-		Player env = gi.getEnv();
-		printVars(env);
-		printConstraints(env);
-
 		System.out.println("\nPrinting vars and constraints of system player:");
 		Player sys = gi.getSys();
 		printVars(sys);
 		printConstraints(sys);
+		
+		System.out.println("Printing vars and constraints of environment player:");
+		Player env = gi.getEnv();
+		printVars(env);
+		printConstraints(env);
 
 		System.out.println("\nTranslating to Spectra Kernel.");
 		// important step to reduce language features to the Spectra Kernel
 		TranslationProvider.translate(gi);
 		Player aux = gi.getAux();
 
-		System.out.println("\nPrinting vars and constraints of environment player:");
-		printVars(env);
-		printConstraints(env);
-
 		System.out.println("\nPrinting vars and constraints of system and aux players:");
 		printVars(sys);
 		printVars(aux);
 		printConstraints(sys);
 		printConstraints(aux);
+		
+		System.out.println("\nPrinting vars and constraints of environment player:");
+		printVars(env);
+		printConstraints(env);
 		
 		translateToFSP(name, gi);
 	}
@@ -83,11 +81,11 @@ public class SpectraToMTSATtranslator {
 		try {			
 			Map<String, Set<MyVar>> playersMyVars = new HashMap<String, Set<MyVar>>(Map.of(
 					"sys",new HashSet<MyVar>(),
-					"env",new HashSet<MyVar>(),
-					"aux",new HashSet<MyVar>()));			
+					"aux",new HashSet<MyVar>(),
+					"env",new HashSet<MyVar>()));			
 			List<String> sysActions = getActions(gi.getSys().getVars(), playersMyVars.get("sys"));
-			List<String> envActions = getActions(gi.getEnv().getVars(), playersMyVars.get("env"));
 			List<String> auxActions = getActions(gi.getAux().getVars(), playersMyVars.get("aux"));
+			List<String> envActions = getActions(gi.getEnv().getVars(), playersMyVars.get("env"));
 			sysActions.add("tick");
 			envActions.add("tock");
 			List<String> controllableActions = new ArrayList<String>(sysActions);
@@ -112,14 +110,30 @@ public class SpectraToMTSATtranslator {
 	}
 	
 	private static void printInitialValues(PrintWriter out, GameInput gi) {
+		List<String> initialNames = new ArrayList<String>(); 
 		for (String pName : playerNames) {
 			Player p = gi.getPlayer(pName);
+			String typeOfProp = "ltl_property";
+			String clock = "tick";
+			if (pName == "env") {
+				typeOfProp = "constraint";
+				clock = "tock";
+			}
 			for (Constraint cons : p.getConstraints()) {
 				if (cons.isInitial()) {
-					
+					MyConstraint myCons = new MyConstraint(cons);
+					out.println(typeOfProp+" Initial_" + myCons.getName() + " = "+ 
+							initialToAsynchronous(myCons.getLTLProp(), clock));
+					initialNames.add("Initial_"+myCons.getName());
 				}
 			}
 		}
+		String composition = initialNames.stream().collect(Collectors.joining(" || "));
+		out.println("||Initial_Values = ("+composition+").\n\n");		
+	}
+	
+	private static String initialToAsynchronous(String prop, String clock) {
+		return "(!"+clock+" W ("+clock+" && "+prop+"))";
 	}
 	
 	private static void printClock(PrintWriter out) {
