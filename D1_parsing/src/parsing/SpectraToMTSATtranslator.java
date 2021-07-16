@@ -28,6 +28,10 @@ import tau.smlab.syntech.spectragameinput.SpectraTranslationException;
 public class SpectraToMTSATtranslator {
 
 	private static List<String> playerNames = Arrays.asList("sys","aux","env");
+	private static int safetyAssumptions = 0;
+	private static int justiceAssumptions = 0;
+//	private static int safetyGuarantees = 0;
+//	private static int justiceGuarantees = 0;
 	
 	public static void main(String[] args) throws ErrorsInSpectraException, SpectraTranslationException {
 
@@ -103,9 +107,25 @@ public class SpectraToMTSATtranslator {
 			
 			printInitialValues(out, gi);
 			
+			printAssumptions(out, gi);
+			
 			out.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	private static void printAssumptions(PrintWriter out, GameInput gi) { 
+		for (Constraint cons : gi.getEnv().getConstraints()) {
+			if (cons.isSafety()) {
+				MyConstraint myCons = new MyConstraint(cons,"tock",safetyAssumptions);
+				safetyAssumptions += 1;
+				out.println("constraint " + myCons.getName() + " = "+ myCons.getLTLProp());
+			} else if(cons.isJustice()) {
+				MyConstraint myCons = new MyConstraint(cons,"tock",justiceAssumptions);
+				justiceAssumptions += 1;
+				out.println("assert " + myCons.getName() + " = "+ myCons.getLTLProp());
+			}
 		}
 	}
 	
@@ -121,19 +141,14 @@ public class SpectraToMTSATtranslator {
 			}
 			for (Constraint cons : p.getConstraints()) {
 				if (cons.isInitial()) {
-					MyConstraint myCons = new MyConstraint(cons);
-					out.println(typeOfProp+" Initial_" + myCons.getName() + " = "+ 
-							initialToAsynchronous(myCons.getLTLProp(), clock));
+					MyConstraint myCons = new MyConstraint(cons, clock, -1); //the number is ignored for initial constraints
+					out.println(typeOfProp+" Initial_" + myCons.getName() + " = "+ myCons.getLTLProp());
 					initialNames.add("Initial_"+myCons.getName());
 				}
 			}
 		}
 		String composition = initialNames.stream().collect(Collectors.joining(" || "));
 		out.println("||Initial_Values = ("+composition+").\n\n");		
-	}
-	
-	private static String initialToAsynchronous(String prop, String clock) {
-		return "(!"+clock+" W ("+clock+" && "+prop+"))";
 	}
 	
 	private static void printClock(PrintWriter out) {

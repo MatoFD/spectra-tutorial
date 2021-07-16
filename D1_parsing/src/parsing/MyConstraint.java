@@ -1,5 +1,8 @@
 package parsing;
 
+
+import org.eclipse.xtext.xbase.lib.Pair;
+
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.spec.*;
 
@@ -8,64 +11,71 @@ public class MyConstraint {
 	private String name;
 	private String LTLProp;
 	
-	public MyConstraint(Constraint cons) {
+	public MyConstraint(Constraint cons, String clockKind, int propertyNumber) {
 		if (cons.isInitial()) {
-			buildInitial(cons.getSpec());
+			buildInitial(cons.getSpec(), clockKind);
 		} else if (cons.isSafety()) {
-			buildSafety(cons.getSpec());
+			buildSafety(cons.getSpec(), clockKind, propertyNumber);
 		} else if (cons.isJustice()) {
-			buildJustice(cons.getSpec());
+			buildJustice(cons.getSpec(), clockKind, propertyNumber);
 		} else {
 			throw new Error("we neec to translate a new type of constraint");
 		}
 	}
 
-	public MyConstraint(String type, Spec spec) {
-		switch(type) {
-			case "initial":
-				buildInitial(spec);
-			case "safety":
-				buildSafety(spec);
-			case "justice":
-				buildJustice(spec);
-		}
-	}
-	
-	private void buildJustice(Spec toParse) {
-		
-	}
-	
-	private void buildSafety(Spec toParse) {
-		
-	}
-	
-	private void buildInitial(Spec toParse) {
-		if(toParse instanceof VariableReference) {
-			VariableReference varRef = (VariableReference) toParse;
-			this.name = varRef.getReferenceName();
-			this.LTLProp = varRef.getReferenceName().toUpperCase();
-		} else if(toParse instanceof SpecExp) {
-			SpecExp specification = (SpecExp) toParse;
+	public Pair<String, String> subParse(Spec spec) {
+		String name = "";
+		String LTLProp = "";
+		if(spec instanceof VariableReference) {
+			VariableReference varRef = (VariableReference) spec;
+			name = varRef.getReferenceName();
+			LTLProp = varRef.getReferenceName().toUpperCase();
+		} else if(spec instanceof SpecExp) {
+			SpecExp specification = (SpecExp) spec;
 			if(specification.getOperator().equals(Operator.EQUALS)) {
 				VariableReference left = (VariableReference) specification.getChildren()[0]; 
-				this.name = left.getReferenceName();
-				MyConstraint right = new MyConstraint("initial", specification.getChildren()[1]);
-				this.LTLProp = right.LTLProp;
+				name = left.getReferenceName();
+				LTLProp = subParse(specification.getChildren()[1]).getValue(); //only "right", not "left=right" because we have fluents, not variables in MTSA
 			} else if(specification.getOperator().equals(Operator.NOT)) {
-				MyConstraint child = new MyConstraint("initial", specification.getChildren()[0]);
-				this.name = child.name;
-				this.LTLProp = "!"+child.LTLProp;
+				Pair<String, String> answer = subParse(specification.getChildren()[0]);
+				name = answer.getKey();
+				LTLProp = "!"+answer.getValue();
+			} else if(specification.getOperator().equals(Operator.IMPLIES)) {
+				Pair<String, String> left = subParse(specification.getChildren()[0]);
+				name = left.getKey();
+				Pair<String, String> right = subParse(specification.getChildren()[1]);
+				LTLProp = left.getValue() + " -> " + right.getValue();
 			} else {
-				throw new Error();
+				throw new Error("new kind of SpecExp");
 			}
-			
-		} else if (toParse instanceof PrimitiveValue) {
-			PrimitiveValue val = (PrimitiveValue) toParse;
-			this.name = val.getValue();
-			this.LTLProp = val.getValue();
+		} else if (spec instanceof PrimitiveValue) {
+			PrimitiveValue val = (PrimitiveValue) spec;
+			name = val.getValue();
+			LTLProp = val.getValue();
 		} else {
 			throw new Error("we need another type of Spec to parse");
-		}
+		}		
+		return new Pair<String, String>(name, "("+LTLProp+")");
+	}
+	
+	private void buildJustice(Spec toParse, String clockKind, Integer propertyNumber) {
+		Pair<String, String> answer = subParse(toParse);
+		this.name = clockKind == "tock" ? "A_l" : "G_l";
+		this.name = this.name + propertyNumber.toString();
+		this.LTLProp = "(" + clockKind + " && " +answer.getValue()+")";
+	}
+	
+	private void buildSafety(Spec toParse, String clockKind, Integer propertyNumber) {
+		Pair<String, String> answer = subParse(toParse);
+		this.name = clockKind == "tock" ? "A" : "G";
+		this.name = this.name + propertyNumber.toString();
+		this.LTLProp = "[](" + clockKind + " -> " +answer.getValue()+")";
+	}
+	
+	private void buildInitial(Spec toParse, String clockKind) {
+		Pair<String, String> answer = subParse(toParse);
+		this.name = answer.getKey();
+		this.LTLProp = "(!"+clockKind+" W ("+clockKind+" && "+answer.getValue()+"))";
 	}
 	
 	public String getLTLProp() {
