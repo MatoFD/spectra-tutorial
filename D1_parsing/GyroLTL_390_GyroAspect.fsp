@@ -5,19 +5,19 @@ set UncontrolledActions = {distSense.clear, distSense.blocked, isReady, not_isRe
 set AllActions = {ControlledActions, UncontrolledActions}
 
 
-set Balancer_Actions = {balancer.stp, balancer.fwd, balancer.bwd, balancer.turn_left, balancer.turn_right}
-fluent BALANCER.STP = <balancer.stp, Balancer_Actions\{balancer.stp}>
-fluent BALANCER.FWD = <balancer.fwd, Balancer_Actions\{balancer.fwd}>
-fluent BALANCER.BWD = <balancer.bwd, Balancer_Actions\{balancer.bwd}>
-fluent BALANCER.TURN_LEFT = <balancer.turn_left, Balancer_Actions\{balancer.turn_left}>
-fluent BALANCER.TURN_RIGHT = <balancer.turn_right, Balancer_Actions\{balancer.turn_right}>
-
 set DistSense_Actions = {distSense.clear, distSense.blocked}
 fluent DISTSENSE.CLEAR = <distsense.clear, DistSense_Actions\{distsense.clear}>
 fluent DISTSENSE.BLOCKED = <distsense.blocked, DistSense_Actions\{distsense.blocked}>
 
 set IsReady_Actions = {isReady, not_isReady}
 fluent ISREADY = <isready, IsReady_Actions\{isready}>
+
+set Balancer_Actions = {balancer.stp, balancer.fwd, balancer.bwd, balancer.turn_left, balancer.turn_right}
+fluent BALANCER.STP = <balancer.stp, Balancer_Actions\{balancer.stp}>
+fluent BALANCER.FWD = <balancer.fwd, Balancer_Actions\{balancer.fwd}>
+fluent BALANCER.BWD = <balancer.bwd, Balancer_Actions\{balancer.bwd}>
+fluent BALANCER.TURN_LEFT = <balancer.turn_left, Balancer_Actions\{balancer.turn_left}>
+fluent BALANCER.TURN_RIGHT = <balancer.turn_right, Balancer_Actions\{balancer.turn_right}>
 
 set ENV_CONSTRAINT.18.respondsTo.responded_Actions = {ENV_CONSTRAINT.18.respondsTo.responded, not_ENV_CONSTRAINT.18.respondsTo.responded}
 fluent ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED = <env_constraint.18.respondsto.responded, ENV_CONSTRAINT.18.respondsTo.responded_Actions\{env_constraint.18.respondsto.responded}>
@@ -46,13 +46,13 @@ assert A_clock = (Tock)
 //==================LTL Properties=============================
 //=======Starting values=======
 
-ltl_property Initial_balancer = (!tick W (tick && ((STP))))
-ltl_property Initial_SYS_CONSTRAINT.10.respondsTo.responded = (!tick W (tick && (SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED)))
-ltl_property Initial_ENV_CONSTRAINT.18.respondsTo.responded = (!tick W (tick && (ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED)))
-constraint Initial_isReady = (!tock W (tock && (!(ISREADY))))
-||Initial_Values = (Initial_balancer || Initial_SYS_CONSTRAINT.10.respondsTo.responded || Initial_ENV_CONSTRAINT.18.respondsTo.responded || Initial_isReady).
+ltl_property Initial_BALANCER = (!tick W (tick && (STP)))
+ltl_property Initial_SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED = (!tick W (tick && SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED))
+ltl_property Initial_ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED = (!tick W (tick && ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED))
+constraint Initial_ISREADY = (!tock W (tock && !ISREADY))
+||Initial_Values = (Initial_BALANCER || Initial_SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED || Initial_ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED || Initial_ISREADY).
 
 
-assert A_l0 = (tock && (ISREADY))
-constraint A0 = [](tock -> ((ISREADY) -> (ISREADY')))
-assert A_l1 = (tock && (ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED))
+assert A_l0 = (tock && ISREADY)
+constraint A0 = [](tock -> (ISREADY -> (X(!tock W (tock && ISREADY)))))
+assert A_l1 = (tock && ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED)

@@ -30,8 +30,8 @@ public class SpectraToMTSATtranslator {
 	private static List<String> playerNames = Arrays.asList("sys","aux","env");
 	private static int safetyAssumptions = 0;
 	private static int justiceAssumptions = 0;
-//	private static int safetyGuarantees = 0;
-//	private static int justiceGuarantees = 0;
+	private static int safetyGuarantees = 0;
+	private static int justiceGuarantees = 0;
 	
 	public static void main(String[] args) throws ErrorsInSpectraException, SpectraTranslationException {
 
@@ -107,11 +107,29 @@ public class SpectraToMTSATtranslator {
 			
 			printInitialValues(out, gi);
 			
+			printGuarantees(out, gi);
 			printAssumptions(out, gi);
 			
 			out.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	private static void printGuarantees(PrintWriter out, GameInput gi) { 
+		List<Player> guaranteePlayers = Arrays.asList(gi.getSys()); //TODO add ,gi.getAux());
+		for (Player p : guaranteePlayers) {
+			for (Constraint cons : p.getConstraints()) {
+				if (cons.isSafety()) {
+					MyConstraint myCons = new MyConstraint(cons,"tick",safetyGuarantees);
+					safetyGuarantees += 1;
+					out.println("ltl_property " + myCons.getName() + " = "+ myCons.getLTLProp());
+				} else if(cons.isJustice()) {
+					MyConstraint myCons = new MyConstraint(cons,"tick",justiceGuarantees);
+					justiceGuarantees += 1;
+					out.println("assert " + myCons.getName() + " = "+ myCons.getLTLProp());
+				}
+			}
 		}
 	}
 	

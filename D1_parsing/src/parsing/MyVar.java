@@ -22,8 +22,6 @@ public class MyVar {
 		}else {
 			this.fluentNames = actions.stream().map(s -> s.toUpperCase()).collect(Collectors.toList());
 		}
-		
-		
 	}
 	
 	public String printActions() {
