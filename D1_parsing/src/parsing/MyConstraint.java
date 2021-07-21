@@ -23,8 +23,41 @@ public class MyConstraint {
 		}
 	}
 
-	public Pair<String, String> subParse(Spec spec, String clockKind) {
-		String name = "";
+	public String subParse(Spec spec, String clockKind) {
+		if(spec instanceof VariableReference) {
+			VariableReference varRef = (VariableReference) spec;
+			name = makeVarName(varRef.getReferenceName());
+			if(checkIfIsNextVar(varRef)) {
+				name = name.substring(0, name.length()-1);
+				return "X(!" + clockKind + " W (" + clockKind + " && " + name + "))";
+			}else {
+				return name;
+			}
+		} else if(spec instanceof SpecExp) {
+			SpecExp specification = (SpecExp) spec;
+			if(specification.getOperator().equals(Operator.EQUALS)) {
+				return subParse(specification.getChildren()[1], clockKind); //only "right", not "left=right" because we have fluents, not variables in MTSA
+			} else if(specification.getOperator().equals(Operator.NOT)) {
+				String answer = subParse(specification.getChildren()[0], clockKind);
+				return "!" + answer;
+			} else if(specification.getOperator().equals(Operator.PRIME)) {
+				String answer = subParse(specification.getChildren()[0], clockKind);
+				return "X(!" + clockKind + " W (" + clockKind + " && " + answer + "))";
+			} else {
+				String left = subParse(specification.getChildren()[0], clockKind);
+				String right = subParse(specification.getChildren()[1], clockKind);
+				return "(" + left + MTSAOperator(specification.getOperator()) + right + ")";
+			}
+		} else if (spec instanceof PrimitiveValue) {
+			PrimitiveValue val = (PrimitiveValue) spec;
+			return val.getValue();
+		} else {
+			throw new Error("we need another type of Spec to parse");
+		}		
+	}
+		
+	public Pair<String, String> initialParse(Spec spec, String clockKind) {
+		String name = ""; //only matters for varRefs, primitiveVals and operator NOT, since it's for initial constraints
 		String LTLProp = "";
 		if(spec instanceof VariableReference) {
 			VariableReference varRef = (VariableReference) spec;
@@ -40,38 +73,18 @@ public class MyConstraint {
 			if(specification.getOperator().equals(Operator.EQUALS)) {
 				VariableReference left = (VariableReference) specification.getChildren()[0]; 
 				name = makeVarName(left.getReferenceName());
-				LTLProp = clockKind + " && " + subParse(specification.getChildren()[1], clockKind).getValue(); //only "right", not "left=right" because we have fluents, not variables in MTSA
+				LTLProp = clockKind + " && " + subParse(specification.getChildren()[1], clockKind); //only "right", not "left=right" because we have fluents, not variables in MTSA
 			} else if(specification.getOperator().equals(Operator.NOT)) {
-				Pair<String, String> answer = subParse(specification.getChildren()[0], clockKind);
-				name = answer.getKey();
-				LTLProp = clockKind + " && !" + answer.getKey();
-			} else if(specification.getOperator().equals(Operator.IMPLIES)) {
-				Pair<String, String> left = subParse(specification.getChildren()[0], clockKind);
-				name = left.getKey();
-				Pair<String, String> right = subParse(specification.getChildren()[1], clockKind);
-				String leftVal;
-				if (specification.getChildren()[0] instanceof VariableReference
-						&& !checkIfIsNextVar((VariableReference) specification.getChildren()[0])) {
-					leftVal = left.getKey();
-				}else {
-					leftVal = left.getValue();
-				}
-				String rightVal;
-				if (specification.getChildren()[1] instanceof VariableReference
-						&& !checkIfIsNextVar((VariableReference) specification.getChildren()[1])) {
-					rightVal = right.getKey();
-				}else {
-					rightVal = right.getValue();
-				}
-				LTLProp = leftVal + " -> " + rightVal;
-			} else if(specification.getOperator().equals(Operator.AND)) {
-				Pair<String, String> left = subParse(specification.getChildren()[0], clockKind);
-				name = left.getKey();
-				Pair<String, String> right = subParse(specification.getChildren()[1], clockKind);
-				//TODO abstraer lo que hice en el IMPLIES, de ver si es varRef el caso recursivo para agarrar key o value.
-				LTLProp = clockKind + " && " + subParse(specification.getChildren()[1], clockKind).getValue();
+				String answer = subParse(specification.getChildren()[0], clockKind);
+				name = answer;
+				LTLProp = clockKind + " && !" + answer;
+			} else if(specification.getOperator().equals(Operator.PRIME)) {
+				String answer = subParse(specification.getChildren()[0], clockKind);
+				LTLProp = "X(!" + clockKind + " W (" + clockKind + " && " + answer + "))";
 			} else {
-				throw new Error("new kind of SpecExp");
+				String left = subParse(specification.getChildren()[0], clockKind);
+				String right = subParse(specification.getChildren()[1], clockKind);
+				LTLProp = left + MTSAOperator(specification.getOperator()) + right;
 			}
 		} else if (spec instanceof PrimitiveValue) {
 			PrimitiveValue val = (PrimitiveValue) spec;
@@ -83,22 +96,36 @@ public class MyConstraint {
 		return new Pair<String, String>(name, "("+LTLProp+")");
 	}
 	
+
+	private String MTSAOperator(Operator op) {
+		switch(op) {
+			case IMPLIES:
+				return " -> ";
+			case AND:
+				return " && ";
+			case OR:
+				return " || ";
+			default:
+				throw new Error("new kind of SpecExp");
+		}
+	}
+	
 	private void buildJustice(Spec toParse, String clockKind, Integer propertyNumber) {
-		Pair<String, String> answer = subParse(toParse, clockKind);
+		Pair<String, String> answer = initialParse(toParse, clockKind);
 		this.name = clockKind == "tock" ? "A_l" : "G_l";
 		this.name = this.name + propertyNumber.toString();
 		this.LTLProp = answer.getValue();
 	}
 	
 	private void buildSafety(Spec toParse, String clockKind, Integer propertyNumber) {
-		Pair<String, String> answer = subParse(toParse, clockKind);
+		Pair<String, String> answer = initialParse(toParse, clockKind);
 		this.name = clockKind == "tock" ? "A" : "G";
 		this.name = this.name + propertyNumber.toString();
 		this.LTLProp = "[](" + clockKind + " -> " +answer.getValue()+")";
 	}
 	
 	private void buildInitial(Spec toParse, String clockKind) {
-		Pair<String, String> answer = subParse(toParse, clockKind);
+		Pair<String, String> answer = initialParse(toParse, clockKind);
 		this.name = answer.getKey();
 		this.LTLProp = "(!"+clockKind+" W "+answer.getValue()+")";
 	}

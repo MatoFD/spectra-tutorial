@@ -19,11 +19,11 @@ fluent BALANCER.BWD = <balancer.bwd, Balancer_Actions\{balancer.bwd}>
 fluent BALANCER.TURN_LEFT = <balancer.turn_left, Balancer_Actions\{balancer.turn_left}>
 fluent BALANCER.TURN_RIGHT = <balancer.turn_right, Balancer_Actions\{balancer.turn_right}>
 
-set ENV_CONSTRAINT.18.respondsTo.responded_Actions = {ENV_CONSTRAINT.18.respondsTo.responded, not_ENV_CONSTRAINT.18.respondsTo.responded}
-fluent ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED = <env_constraint.18.respondsto.responded, ENV_CONSTRAINT.18.respondsTo.responded_Actions\{env_constraint.18.respondsto.responded}>
-
 set SYS_CONSTRAINT.10.respondsTo.responded_Actions = {SYS_CONSTRAINT.10.respondsTo.responded, not_SYS_CONSTRAINT.10.respondsTo.responded}
 fluent SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED = <sys_constraint.10.respondsto.responded, SYS_CONSTRAINT.10.respondsTo.responded_Actions\{sys_constraint.10.respondsto.responded}>
+
+set ENV_CONSTRAINT.18.respondsTo.responded_Actions = {ENV_CONSTRAINT.18.respondsTo.responded, not_ENV_CONSTRAINT.18.respondsTo.responded}
+fluent ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED = <env_constraint.18.respondsto.responded, ENV_CONSTRAINT.18.respondsTo.responded_Actions\{env_constraint.18.respondsto.responded}>
 
 
 // move from synchronous play to asynchronous representation
@@ -46,13 +46,24 @@ assert A_clock = (Tock)
 //==================LTL Properties=============================
 //=======Starting values=======
 
-ltl_property Initial_BALANCER = (!tick W (tick && (STP)))
+ltl_property Initial_BALANCER = (!tick W (tick && STP))
 ltl_property Initial_SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED = (!tick W (tick && SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED))
 ltl_property Initial_ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED = (!tick W (tick && ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED))
 constraint Initial_ISREADY = (!tock W (tock && !ISREADY))
 ||Initial_Values = (Initial_BALANCER || Initial_SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED || Initial_ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED || Initial_ISREADY).
 
 
+ltl_property G0 = [](tick -> (!ISREADY -> STP))
+ltl_property G1 = [](tick -> ((BLOCKED && ISREADY) -> !FWD))
+assert G_l0 = (tick && FWD)
+ltl_property G2 = [](tick -> ((CLEAR && ISREADY) -> FWD))
+ltl_property G3 = [](tick -> (FWD -> X(!tick W (tick && !(TURN_RIGHT || TURN_LEFT)))))
+ltl_property G4 = [](tick -> (((BLOCKED && STP) && ISREADY) -> X(!tick W (tick && !STP))))
+assert G_l1 = (tick && SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED)
+
+
 assert A_l0 = (tock && ISREADY)
-constraint A0 = [](tock -> (ISREADY -> (X(!tock W (tock && ISREADY)))))
+constraint A0 = [](tock -> (ISREADY -> X(!tock W (tock && ISREADY))))
 assert A_l1 = (tock && ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED)
+
+

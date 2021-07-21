@@ -7,10 +7,8 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.*;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
@@ -83,10 +81,10 @@ public class SpectraToMTSATtranslator {
 			}
 		}
 		try {			
-			Map<String, Set<MyVar>> playersMyVars = new HashMap<String, Set<MyVar>>(Map.of(
-					"sys",new HashSet<MyVar>(),
-					"aux",new HashSet<MyVar>(),
-					"env",new HashSet<MyVar>()));			
+			Map<String, List<MyVar>> playersMyVars = new HashMap<String, List<MyVar>>(Map.of(
+					"sys",new ArrayList<MyVar>(),
+					"aux",new ArrayList<MyVar>(),
+					"env",new ArrayList<MyVar>()));			
 			List<String> sysActions = getActions(gi.getSys().getVars(), playersMyVars.get("sys"));
 			List<String> auxActions = getActions(gi.getAux().getVars(), playersMyVars.get("aux"));
 			List<String> envActions = getActions(gi.getEnv().getVars(), playersMyVars.get("env"));
@@ -130,6 +128,7 @@ public class SpectraToMTSATtranslator {
 					out.println("assert " + myCons.getName() + " = "+ myCons.getLTLProp());
 				}
 			}
+			out.println("\n");
 		}
 	}
 	
@@ -145,6 +144,7 @@ public class SpectraToMTSATtranslator {
 				out.println("assert " + myCons.getName() + " = "+ myCons.getLTLProp());
 			}
 		}
+		out.println("\n");
 	}
 	
 	private static void printInitialValues(PrintWriter out, GameInput gi) {
@@ -191,8 +191,8 @@ public class SpectraToMTSATtranslator {
 				+ "//=======Starting values=======\n");
 	}
 	
-	private static void printVars(PrintWriter out, Map<String, Set<MyVar>> playersMyVars) {
-		for(Set<MyVar> player : playersMyVars.values()) {
+	private static void printVars(PrintWriter out, Map<String, List<MyVar>> playersMyVars) {
+		for(List<MyVar> player : playersMyVars.values()) {
 			for(MyVar v : player) {
 				String varActions = v.getName()+"_Actions";
 				out.println("\n"+"set "+varActions+" = {"+v.printActions()+"}");
@@ -204,7 +204,7 @@ public class SpectraToMTSATtranslator {
 	}
 	
 	//Also build Set of MyVar for the respective player
-	private static List<String> getActions(List<Variable> vars, Set<MyVar> playersMyVars){
+	private static List<String> getActions(List<Variable> vars, List<MyVar> playersMyVars){
 		List<String> answer = new ArrayList<String>();
 		for (Variable var : vars) {
 			List<String> current = getActions(var);
