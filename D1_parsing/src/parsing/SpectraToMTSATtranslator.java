@@ -4,11 +4,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.*;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
@@ -114,6 +118,22 @@ public class SpectraToMTSATtranslator {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+
+		try {
+			fixNumbers(Path.of(filename));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static void fixNumbers(Path filepath) throws IOException {
+		//this is needed because some names in spectra look like sys_const.5.name
+		//but in MTSA we need them to be sys_const[5].name
+		String aux = Files.readString(filepath);
+		Pattern p = Pattern.compile("\\.(\\d+)\\.");
+		Matcher m = p.matcher(aux);
+		String ans = m.replaceAll(match -> "["+match.group(1)+"].");
+		Files.writeString(filepath, ans);
 	}
 	
 	private static void printCompositionsAndGoal(PrintWriter out, GameInput gi) {
@@ -277,13 +297,13 @@ public class SpectraToMTSATtranslator {
 	
 	private static List<String> getActions(Variable var){
 		List<String> answer = new ArrayList<String>();
-		String name = var.getName();
+		String name = var.getName().toLowerCase();
 		if(var.getType().isBoolean()) {
 			answer.add(name);
 			answer.add("not_"+name);
 		} else if(var.getType().isInteger()) {
 			for (Integer i = var.getType().getLower(); i<=var.getType().getUpper(); i++) {
-				answer.add(name+"."+Integer.toString(i));
+				answer.add(name+"["+Integer.toString(i)+"]");
 			}
 		} else {
 			// We assume for now that the var is an enum if not bool or int.
