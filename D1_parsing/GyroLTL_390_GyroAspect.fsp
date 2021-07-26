@@ -5,19 +5,19 @@ set UncontrolledActions = {distSense.clear, distSense.blocked, isReady, not_isRe
 set AllActions = {ControlledActions, UncontrolledActions}
 
 
-set DistSense_Actions = {distSense.clear, distSense.blocked}
-fluent DISTSENSE.CLEAR = <distsense.clear, DistSense_Actions\{distsense.clear}>
-fluent DISTSENSE.BLOCKED = <distsense.blocked, DistSense_Actions\{distsense.blocked}>
-
-set IsReady_Actions = {isReady, not_isReady}
-fluent ISREADY = <isready, IsReady_Actions\{isready}>
-
 set Balancer_Actions = {balancer.stp, balancer.fwd, balancer.bwd, balancer.turn_left, balancer.turn_right}
 fluent BALANCER.STP = <balancer.stp, Balancer_Actions\{balancer.stp}>
 fluent BALANCER.FWD = <balancer.fwd, Balancer_Actions\{balancer.fwd}>
 fluent BALANCER.BWD = <balancer.bwd, Balancer_Actions\{balancer.bwd}>
 fluent BALANCER.TURN_LEFT = <balancer.turn_left, Balancer_Actions\{balancer.turn_left}>
 fluent BALANCER.TURN_RIGHT = <balancer.turn_right, Balancer_Actions\{balancer.turn_right}>
+
+set DistSense_Actions = {distSense.clear, distSense.blocked}
+fluent DISTSENSE.CLEAR = <distsense.clear, DistSense_Actions\{distsense.clear}>
+fluent DISTSENSE.BLOCKED = <distsense.blocked, DistSense_Actions\{distsense.blocked}>
+
+set IsReady_Actions = {isReady, not_isReady}
+fluent ISREADY = <isready, IsReady_Actions\{isready}>
 
 set SYS_CONSTRAINT.10.respondsTo.responded_Actions = {SYS_CONSTRAINT.10.respondsTo.responded, not_SYS_CONSTRAINT.10.respondsTo.responded}
 fluent SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED = <sys_constraint.10.respondsto.responded, SYS_CONSTRAINT.10.respondsTo.responded_Actions\{sys_constraint.10.respondsto.responded}>
@@ -60,6 +60,10 @@ ltl_property G2 = [](tick -> ((CLEAR && ISREADY) -> FWD))
 ltl_property G3 = [](tick -> (FWD -> X(!tick W (tick && !(TURN_RIGHT || TURN_LEFT)))))
 ltl_property G4 = [](tick -> (((BLOCKED && STP) && ISREADY) -> X(!tick W (tick && !STP))))
 assert G_l1 = (tick && SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED)
+
+
+ltl_property G5 = [](tick -> ((X(!tick W (tick && SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED)) -> (CLEAR || (SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED && (TURN_LEFT || TURN_RIGHT)))) && ((CLEAR || (SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED && (TURN_LEFT || TURN_RIGHT))) -> X(!tick W (tick && SYS_CONSTRAINT.10.RESPONDSTO.RESPONDED)))))
+ltl_property G6 = [](tick -> ((X(!tick W (tick && ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED)) -> (CLEAR || (ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED && (FWD || STP)))) && ((CLEAR || (ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED && (FWD || STP))) -> X(!tick W (tick && ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED)))))
 
 
 assert A_l0 = (tock && ISREADY)

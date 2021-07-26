@@ -115,7 +115,7 @@ public class SpectraToMTSATtranslator {
 	}
 	
 	private static void printGuarantees(PrintWriter out, GameInput gi) { 
-		List<Player> guaranteePlayers = Arrays.asList(gi.getSys()); //TODO add ,gi.getAux());
+		List<Player> guaranteePlayers = Arrays.asList(gi.getSys(), gi.getAux());
 		for (Player p : guaranteePlayers) {
 			for (Constraint cons : p.getConstraints()) {
 				if (cons.isSafety()) {
