@@ -108,10 +108,71 @@ public class SpectraToMTSATtranslator {
 			printGuarantees(out, gi);
 			printAssumptions(out, gi);
 			
+			printCompositionsAndGoal(out, gi);
+			
 			out.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private static void printCompositionsAndGoal(PrintWriter out, GameInput gi) {
+		out.println("\n\n||Domain_independent = (Full_Clock).\n"
+				+ "||Env = (Domain_independent || Initial_Values ||\n"
+				+ "		"+getSafety() + "). //safety assumptions and guarantees\n"
+				+ "\n"
+				+ "controllerSpec Goal = {\n"
+				+ "       assumption = {"
+				+ getLivenessAsm(false) + ", A_clock}  //user liveness assumptions + A_clock\n"
+				+ "       liveness = {"+getLivenessGar(false)+"}  //user leness guarantees\n"
+				+ "       controllable = {ControlledActions}\n"
+				+ "}\n\n"
+				+ "heuristic ||Control = (Env)~{Goal}.\n"
+				+ "checkCompatibility ||CheckControl = (Env)~{Goal}.\n"
+				+ "\n"
+				+ "||System = (Control || Env).\n"
+				+ "\n"
+				+ "assert Check = (("+getLivenessAsm(true)+") -> ("+getLivenessGar(true)+"))\n"
+				+ "assert ASM =   ("+getLivenessAsm(true)+")\n"
+				+ "assert GNT = ("+getLivenessGar(true)+")\n"
+				+ "progress Time  = {tick}");
+	}
+	
+	private static String getLivenessGar(boolean isForAssert) {
+		List<String> justice = new ArrayList<String>();
+		String extra = isForAssert ? "[]<>" : "";
+		for(Integer i=0; i<justiceGuarantees; i++) {
+			justice.add(extra+"G_l"+i.toString());
+		}
+		if(isForAssert) {
+			return justice.stream().collect(Collectors.joining(" && "));
+		}else {
+			return justice.stream().collect(Collectors.joining(", "));
+		}
+	}
+	
+	private static String getLivenessAsm(boolean isForAssert) {
+		List<String> justice = new ArrayList<String>();
+		String extra = isForAssert ? "[]<>" : "";
+		for(Integer i=0; i<justiceAssumptions; i++) {
+			justice.add(extra+"A_l"+i.toString());
+		}
+		if(isForAssert) {
+			return justice.stream().collect(Collectors.joining(" && "));
+		}else {
+			return justice.stream().collect(Collectors.joining(", "));
+		}
+	}
+	
+	private static String getSafety() {
+		List<String> safety = new ArrayList<String>();
+		for(Integer i=0; i<safetyAssumptions; i++) {
+			safety.add("A"+i.toString());
+		}
+		for(Integer i=0; i<safetyGuarantees; i++) {
+			safety.add("G"+i.toString());
+		}
+		return safety.stream().collect(Collectors.joining(" || "));
 	}
 	
 	private static void printGuarantees(PrintWriter out, GameInput gi) { 

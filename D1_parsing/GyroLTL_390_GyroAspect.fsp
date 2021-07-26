@@ -71,3 +71,24 @@ constraint A0 = [](tock -> (ISREADY -> X(!tock W (tock && ISREADY))))
 assert A_l1 = (tock && ENV_CONSTRAINT.18.RESPONDSTO.RESPONDED)
 
 
+
+
+||Domain_independent = (Full_Clock).
+||Env = (Domain_independent || Initial_Values ||
+		A0 || G0 || G1 || G2 || G3 || G4 || G5 || G6). //safety assumptions and guarantees
+
+controllerSpec Goal = {
+       assumption = {A_l0, A_l1, A_clock}  //user liveness assumptions + A_clock
+       liveness = {G_l0, G_l1}  //user leness guarantees
+       controllable = {ControlledActions}
+}
+
+heuristic ||Control = (Env)~{Goal}.
+checkCompatibility ||CheckControl = (Env)~{Goal}.
+
+||System = (Control || Env).
+
+assert Check = (([]<>A_l0 && []<>A_l1) -> ([]<>G_l0 && []<>G_l1))
+assert ASM =   ([]<>A_l0 && []<>A_l1)
+assert GNT = ([]<>G_l0 && []<>G_l1)
+progress Time  = {tick}
