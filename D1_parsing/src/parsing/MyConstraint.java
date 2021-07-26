@@ -164,26 +164,54 @@ public class MyConstraint {
 					return changeNotOrder(e.getChildren()[0], true);
 				}
 			case IFF:
-				Spec[] fixedChildrenIFF = new Spec[2];
-				for (int i = 0; i < e.getChildren().length; i++) {
-					fixedChildrenIFF[i] = changeNotOrder(e.getChildren()[i], insideNot);
+				Spec leftToRight = new SpecExp(Operator.IMPLIES, e.getChildren()[0], e.getChildren()[1]);
+				Spec rightToLeft = new SpecExp(Operator.IMPLIES, e.getChildren()[1], e.getChildren()[0]);
+				Spec fixedLeftToRight = changeNotOrder(leftToRight, insideNot);
+				Spec fixedrightToLeft = changeNotOrder(rightToLeft, insideNot);
+				if(insideNot) {
+					//!(a <-> b) is equivalent to !(a -> b) || !(b -> a), which we fix below.
+					return new SpecExp(Operator.OR, fixedLeftToRight, fixedrightToLeft);
+				}else {
+					//a <-> b is equivalent to (a -> b) && (b -> a), which we fix below.
+					//we are removing implications, because if "a" has a PRIME, it will be wrongly translated
+					return new SpecExp(Operator.AND, fixedLeftToRight, fixedrightToLeft);
 				}
-				//a <-> b is equivalent to (a -> b) && (b -> a), which we fix below.
-				//we are removing implications, because if "a" has a PRIME, it will be wrongly translated
-				Spec leftIFF = new SpecExp(Operator.IMPLIES, fixedChildrenIFF[0], fixedChildrenIFF[1]);
-				Spec rightIFF = new SpecExp(Operator.IMPLIES, fixedChildrenIFF[1], fixedChildrenIFF[0]);
-				return new SpecExp(Operator.AND, leftIFF, rightIFF);
 			case IMPLIES: 
 				Spec left = changeNotOrder(e.getChildren()[0], !insideNot);
 				Spec right = changeNotOrder(e.getChildren()[1], insideNot);
-				// a -> b is equivalent to !a || b
-				return new SpecExp(Operator.OR, left, right);
-			default:
-				Spec[] fixedChildren = new Spec[2];
-				for (int i = 0; i < e.getChildren().length; i++) {
-					fixedChildren[i] = changeNotOrder(e.getChildren()[i], insideNot);
+				if (insideNot) {
+					// !(a -> b) is equivalent to a && !b
+					return new SpecExp(Operator.AND, left, right);
+				}else {
+					// a -> b is equivalent to !a || b
+					return new SpecExp(Operator.OR, left, right);
 				}
-				return new SpecExp(e.getOperator(), fixedChildren[0], fixedChildren[1]);
+			case AND:
+				Spec leftAND = changeNotOrder(e.getChildren()[0], insideNot);
+				Spec rightAND = changeNotOrder(e.getChildren()[1], insideNot);
+				if (insideNot) {
+					// !(a && b) is equivalent to !a || !b
+					return new SpecExp(Operator.OR, leftAND, rightAND);
+				} else {
+					return new SpecExp(Operator.AND, leftAND, rightAND);
+				}
+			case OR:
+				Spec leftOR = changeNotOrder(e.getChildren()[0], insideNot);
+				Spec rightOR = changeNotOrder(e.getChildren()[1], insideNot);
+				if (insideNot) {
+					// !(a || b) is equivalent to !a && !b
+					return new SpecExp(Operator.AND, leftOR, rightOR);
+				} else {
+					return new SpecExp(Operator.OR, leftOR, rightOR);
+				}
+			case EQUALS:
+				Spec leftEQ = changeNotOrder(e.getChildren()[0], insideNot);
+				Spec rightEQ = changeNotOrder(e.getChildren()[1], insideNot);
+				//seems strange, because we don't change the a=b when it's negated.
+				//but we only want to negate the children, then subParse knows how to deal with the EQUAL
+				return new SpecExp(Operator.EQUALS, leftEQ, rightEQ);
+			default:
+				throw new Error("new kind of SpecExp");
 		}
 	}
 	
