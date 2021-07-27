@@ -5,19 +5,19 @@ set UncontrolledActions = {distsense.clear, distsense.blocked, isready, not_isre
 set AllActions = {ControlledActions, UncontrolledActions}
 
 
-set DistSense_Actions = {distsense.clear, distsense.blocked}
-fluent DISTSENSE.CLEAR = <distsense.clear, DistSense_Actions\{distsense.clear}>
-fluent DISTSENSE.BLOCKED = <distsense.blocked, DistSense_Actions\{distsense.blocked}>
-
-set IsReady_Actions = {isready, not_isready}
-fluent ISREADY = <isready, IsReady_Actions\{isready}>
-
 set Balancer_Actions = {balancer.stp, balancer.fwd, balancer.bwd, balancer.turn_left, balancer.turn_right}
 fluent BALANCER.STP = <balancer.stp, Balancer_Actions\{balancer.stp}>
 fluent BALANCER.FWD = <balancer.fwd, Balancer_Actions\{balancer.fwd}>
 fluent BALANCER.BWD = <balancer.bwd, Balancer_Actions\{balancer.bwd}>
 fluent BALANCER.TURN_LEFT = <balancer.turn_left, Balancer_Actions\{balancer.turn_left}>
 fluent BALANCER.TURN_RIGHT = <balancer.turn_right, Balancer_Actions\{balancer.turn_right}>
+
+set DistSense_Actions = {distsense.clear, distsense.blocked}
+fluent DISTSENSE.CLEAR = <distsense.clear, DistSense_Actions\{distsense.clear}>
+fluent DISTSENSE.BLOCKED = <distsense.blocked, DistSense_Actions\{distsense.blocked}>
+
+set IsReady_Actions = {isready, not_isready}
+fluent ISREADY = <isready, IsReady_Actions\{isready}>
 
 set SYS_CONSTRAINT[10].respondsTo.responded_Actions = {sys_constraint[10].respondsto.responded, not_sys_constraint[10].respondsto.responded}
 fluent SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED = <sys_constraint[10].respondsto.responded, SYS_CONSTRAINT[10].respondsTo.responded_Actions\{sys_constraint[10].respondsto.responded}>
@@ -46,27 +46,27 @@ assert A_clock = (Tock)
 //==================LTL Properties=============================
 //=======Starting values=======
 
-ltl_property Initial_BALANCER = (!tick W (tick && STP))
+ltl_property Initial_BALANCER = (!tick W (tick && BALANCER.STP))
 ltl_property Initial_SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED = (!tick W (tick && SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED))
 ltl_property Initial_ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED = (!tick W (tick && ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED))
 constraint Initial_ISREADY = (!tock W (tock && !ISREADY))
 ||Initial_Values = (Initial_BALANCER || Initial_SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED || Initial_ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED || Initial_ISREADY).
 
 
-ltl_property G0 = [](tick -> (!ISREADY -> STP))
-ltl_property G1 = [](tick -> ((BLOCKED && ISREADY) -> !FWD))
-assert G_l0 = (tick && FWD)
-ltl_property G2 = [](tick -> ((CLEAR && ISREADY) -> FWD))
-ltl_property G3 = [](tick -> (FWD -> X(!tick W (tick && !(TURN_RIGHT || TURN_LEFT)))))
-ltl_property G4 = [](tick -> (((BLOCKED && STP) && ISREADY) -> X(!tick W (tick && !STP))))
+ltl_property G0 = [](tick -> (!ISREADY -> BALANCER.STP))
+ltl_property G1 = [](tick -> ((DISTSENSE.BLOCKED && ISREADY) -> !BALANCER.FWD))
+assert G_l0 = (tick && BALANCER.FWD)
+ltl_property G2 = [](tick -> ((DISTSENSE.CLEAR && ISREADY) -> BALANCER.FWD))
+ltl_property G3 = [](tick -> (BALANCER.FWD -> X(!tick W (tick && !(BALANCER.TURN_RIGHT || BALANCER.TURN_LEFT)))))
+ltl_property G4 = [](tick -> (((DISTSENSE.BLOCKED && BALANCER.STP) && ISREADY) -> X(!tick W (tick && !BALANCER.STP))))
 assert G_l1 = (tick && SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED)
 
 
-ltl_property G5 = [](tick -> ((X(!tick W (tick && !SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED)) || (CLEAR || (SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED && (TURN_LEFT || TURN_RIGHT)))) && ((!CLEAR && (!SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED || (!TURN_LEFT && !TURN_RIGHT))) || X(!tick W (tick && SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED)))))
- //(X(!tick W (tick && SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED)) <-> (CLEAR || (SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED && !!(TURN_LEFT || TURN_RIGHT))))
+ltl_property G5 = [](tick -> ((X(!tick W (tick && !SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED)) || (DISTSENSE.CLEAR || (SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED && (BALANCER.TURN_LEFT || BALANCER.TURN_RIGHT)))) && ((!DISTSENSE.CLEAR && (!SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED || (!BALANCER.TURN_LEFT && !BALANCER.TURN_RIGHT))) || X(!tick W (tick && SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED)))))
+ //(X(!tick W (tick && SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED)) <-> (DISTSENSE.CLEAR || (SYS_CONSTRAINT[10].RESPONDSTO.RESPONDED && !!(BALANCER.TURN_LEFT || BALANCER.TURN_RIGHT))))
 
-ltl_property G6 = [](tick -> ((X(!tick W (tick && !ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED)) || (CLEAR || (ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED && (FWD || STP)))) && ((!CLEAR && (!ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED || (!FWD && !STP))) || X(!tick W (tick && ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED)))))
- //(X(!tick W (tick && ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED)) <-> (CLEAR || (ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED && !!(FWD || STP))))
+ltl_property G6 = [](tick -> ((X(!tick W (tick && !ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED)) || (DISTSENSE.CLEAR || (ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED && (BALANCER.FWD || BALANCER.STP)))) && ((!DISTSENSE.CLEAR && (!ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED || (!BALANCER.FWD && !BALANCER.STP))) || X(!tick W (tick && ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED)))))
+ //(X(!tick W (tick && ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED)) <-> (DISTSENSE.CLEAR || (ENV_CONSTRAINT[18].RESPONDSTO.RESPONDED && !!(BALANCER.FWD || BALANCER.STP))))
 
 
 

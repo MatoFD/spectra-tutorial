@@ -35,7 +35,13 @@ public class MyConstraint {
 		} else if(spec instanceof SpecExp) {
 			SpecExp specification = (SpecExp) spec;
 			if(specification.getOperator().equals(Operator.EQUALS)) {
-				return subParse(specification.getChildren()[1], clockKind); //only "right", not "left=right" because we have fluents, not variables in MTSA
+				if (!(specification.getChildren()[0] instanceof VariableReference
+						&& specification.getChildren()[1] instanceof PrimitiveValue)) {
+					throw new Error("EQUAL is not VarRef = PrimitiveVal");
+				}
+				VariableReference left = (VariableReference) specification.getChildren()[0];
+				PrimitiveValue right = (PrimitiveValue) specification.getChildren()[1];
+				return left.getReferenceName().toUpperCase()+"."+right.getValue(); //only "right", not "left=right" because we have fluents, not variables in MTSA
 			} else if(specification.getOperator().equals(Operator.NOT)) {
 				String answer = subParse(specification.getChildren()[0], clockKind);
 				return "!" + answer;
@@ -69,9 +75,12 @@ public class MyConstraint {
 		} else if(spec instanceof SpecExp) {
 			SpecExp specification = (SpecExp) spec;
 			if(specification.getOperator().equals(Operator.EQUALS)) {
-				VariableReference left = (VariableReference) specification.getChildren()[0]; 
+				if (!(specification.getChildren()[0] instanceof VariableReference)) {
+					throw new Error("EQUAL is not VarRef = PrimitiveVal");
+				}
+				VariableReference left = (VariableReference) specification.getChildren()[0];
 				name = makeVarName(left.getReferenceName());
-				LTLProp = clockKind + " && " + subParse(specification.getChildren()[1], clockKind); //only "right", not "left=right" because we have fluents, not variables in MTSA
+				LTLProp = clockKind + " && " + subParse(specification, clockKind); //only "right", not "left=right" because we have fluents, not variables in MTSA
 			} else if(specification.getOperator().equals(Operator.NOT)) {
 				String answer = subParse(specification.getChildren()[0], clockKind);
 				name = answer;
@@ -205,11 +214,20 @@ public class MyConstraint {
 					return new SpecExp(Operator.OR, leftOR, rightOR);
 				}
 			case EQUALS:
-				Spec leftEQ = changeNotOrder(e.getChildren()[0], insideNot);
-				Spec rightEQ = changeNotOrder(e.getChildren()[1], insideNot);
-				//seems strange, because we don't change the a=b when it's negated.
-				//but we only want to negate the children, then subParse knows how to deal with the EQUAL
-				return new SpecExp(Operator.EQUALS, leftEQ, rightEQ);
+				if (!(e.getChildren()[0] instanceof VariableReference
+						&& e.getChildren()[1] instanceof PrimitiveValue)) {
+					throw new Error("EQUAL is not VarRef = PrimitiveVal");
+				}
+				if(insideNot) {
+					return new SpecExp(Operator.NOT, e);	
+				}else {
+					return e;
+				}
+//				Spec leftEQ = changeNotOrder(e.getChildren()[0], insideNot);
+//				Spec rightEQ = changeNotOrder(e.getChildren()[1], insideNot);
+//				//seems strange, because we don't change the a=b when it's negated.
+//				//but we only want to negate the children, then subParse knows how to deal with the EQUAL
+//				return new SpecExp(Operator.EQUALS, leftEQ, rightEQ);
 			default:
 				throw new Error("new kind of SpecExp");
 		}
