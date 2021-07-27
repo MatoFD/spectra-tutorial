@@ -275,10 +275,11 @@ public class SpectraToMTSATtranslator {
 	private static void printVars(PrintWriter out, Map<String, List<MyVar>> playersMyVars) {
 		for(List<MyVar> player : playersMyVars.values()) {
 			for(MyVar v : player) {
-				String varActions = v.getName()+"_Actions";
+				String varActions = v.getName().replaceAll("\\.", "_")+"_Actions";
 				out.println("\n"+"set "+varActions+" = {"+v.printActions()+"}");
 				for(String fluent : v.getFluents()) {
-					out.println("fluent "+fluent+" = <"+fluent.toLowerCase()+", "+varActions+"\\{"+fluent.toLowerCase()+"}>");
+					out.println("fluent "+fluent.replaceAll("\\.", "_")+
+							" = <"+fluent.toLowerCase()+", "+varActions+"\\{"+fluent.toLowerCase()+"}>");
 				}
 			}
 		}

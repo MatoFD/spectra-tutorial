@@ -41,7 +41,7 @@ public class MyConstraint {
 				}
 				VariableReference left = (VariableReference) specification.getChildren()[0];
 				PrimitiveValue right = (PrimitiveValue) specification.getChildren()[1];
-				return left.getReferenceName().toUpperCase()+"."+right.getValue(); //only "right", not "left=right" because we have fluents, not variables in MTSA
+				return left.getReferenceName().toUpperCase()+"_"+right.getValue(); //only "right", not "left=right" because we have fluents, not variables in MTSA
 			} else if(specification.getOperator().equals(Operator.NOT)) {
 				String answer = subParse(specification.getChildren()[0], clockKind);
 				return "!" + answer;
@@ -267,7 +267,7 @@ public class MyConstraint {
 	}
 	
 	private String makeVarName(String name) {
-		return name.toUpperCase();
+		return name.toUpperCase().replaceAll("\\.", "_");
 	}
 	
 	public String getLTLProp() {
