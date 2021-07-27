@@ -15,8 +15,6 @@ public class MyConstraint {
 		if (cons.isInitial()) {
 			buildInitial(cons.getSpec(), clockKind);
 		} else if (cons.isSafety()) {
-			//only in safety constraints we have problems to translate NOT(Next(Subspec))
-			cons.setSpec(fixNotNext(cons.getSpec()));
 			buildSafety(cons.getSpec(), clockKind, propertyNumber);
 		} else if (cons.isJustice()) {
 			buildJustice(cons.getSpec(), clockKind, propertyNumber);
@@ -119,28 +117,30 @@ public class MyConstraint {
 	}
 	
 	private void buildSafety(Spec toParse, String clockKind, Integer propertyNumber) {
+		String comment = "";
+		//only in safety constraints we have problems to translate NOT(Next(Subspec))
+		if (hasNotNext(toParse, false)) {
+			//we check if hasNotNext so we only modify the constraints when needed.
+			//because modifying the constraints makes understanding them harder.
+			
+			//we put a comment with the original constraint so the translation is understandable
+			Pair<String, String> commentAux = initialParse(toParse, clockKind);
+			comment += "\n //"+commentAux.getValue() + "\n";
+			
+			toParse = changeNotOrder(toParse, false);
+		}
+		
 		Pair<String, String> answer = initialParse(toParse, clockKind);
 		this.name = clockKind == "tock" ? "A" : "G";
 		this.name = this.name + propertyNumber.toString();
 		this.LTLProp = "[](" + clockKind + " -> " +answer.getValue()+")";
+		this.LTLProp += comment;
 	}
 	
 	private void buildInitial(Spec toParse, String clockKind) {
 		Pair<String, String> answer = initialParse(toParse, clockKind);
 		this.name = answer.getKey();
 		this.LTLProp = "(!"+clockKind+" W "+answer.getValue()+")";
-	}
-	
-	private Spec fixNotNext(Spec s) {
-		if(!(s instanceof SpecExp )){
-			return s;
-		}		
-		if (hasNotNext(s, false)) {
-			//we check if hasNotNext so we only modify the constraints when needed.
-			//because modifying the constraints makes understanding them harder.
-			s = changeNotOrder(s, false);
-		}
-		return s;
 	}
 	
 	private Spec changeNotOrder(Spec s, boolean insideNot) {
