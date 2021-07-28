@@ -35,13 +35,12 @@ public class MyConstraint {
 		} else if(spec instanceof SpecExp) {
 			SpecExp specification = (SpecExp) spec;
 			if(specification.getOperator().equals(Operator.EQUALS)) {
-				if (!(specification.getChildren()[0] instanceof VariableReference
-						&& specification.getChildren()[1] instanceof PrimitiveValue)) {
-					throw new Error("EQUAL is not VarRef = PrimitiveVal");
+				if (!isPrimitiveEqual(specification)) {
+//					throw new Error("EQUAL is not VarRef = PrimitiveVal");
+					return subParse(new SpecExp(Operator.IFF, specification.getChildren()[0], specification.getChildren()[1]), clockKind);
 				}
-				VariableReference left = (VariableReference) specification.getChildren()[0];
-				PrimitiveValue right = (PrimitiveValue) specification.getChildren()[1];
-				return left.getReferenceName().toUpperCase()+"_"+right.getValue(); //only "right", not "left=right" because we have fluents, not variables in MTSA
+				//translate "left=right" to "left_right", because we have fluents, not variables in MTSA.
+				return primitiveEqualProp(specification, clockKind);
 			} else if(specification.getOperator().equals(Operator.NOT)) {
 				String answer = subParse(specification.getChildren()[0], clockKind);
 				return "!" + answer;
@@ -75,8 +74,8 @@ public class MyConstraint {
 		} else if(spec instanceof SpecExp) {
 			SpecExp specification = (SpecExp) spec;
 			if(specification.getOperator().equals(Operator.EQUALS)) {
-				if (!(specification.getChildren()[0] instanceof VariableReference)) {
-					throw new Error("EQUAL is not VarRef = PrimitiveVal");
+				if (!isPrimitiveEqual(specification)) {
+					throw new Error("New type of equal, replace with IFF, as in subParse?");
 				}
 				VariableReference left = (VariableReference) specification.getChildren()[0];
 				name = makeVarName(left.getReferenceName());
@@ -214,9 +213,9 @@ public class MyConstraint {
 					return new SpecExp(Operator.OR, leftOR, rightOR);
 				}
 			case EQUALS:
-				if (!(e.getChildren()[0] instanceof VariableReference
-						&& e.getChildren()[1] instanceof PrimitiveValue)) {
-					throw new Error("EQUAL is not VarRef = PrimitiveVal");
+				if (!isPrimitiveEqual(e)) {
+//					throw new Error("EQUAL is not VarRef = PrimitiveVal");
+					return changeNotOrder(new SpecExp(Operator.IFF, e.getChildren()[0], e.getChildren()[1]), insideNot);
 				}
 				if(insideNot) {
 					return new SpecExp(Operator.NOT, e);	
@@ -231,6 +230,91 @@ public class MyConstraint {
 			default:
 				throw new Error("new kind of SpecExp");
 		}
+	}
+	
+	private String primitiveEqualProp(SpecExp e, String clockKind) {
+		Spec left = e.getChildren()[0];
+		Spec right = e.getChildren()[1];
+		PrimitiveValue prim;
+		Spec varExp;
+		if (left instanceof PrimitiveValue) {
+			prim = (PrimitiveValue) left;
+			varExp = right;
+		} else if(right instanceof PrimitiveValue) {
+			prim = (PrimitiveValue) right;
+			varExp = left;
+		} else {//one of the two is a primVal, otherwise e is not a primitiveEqual
+			throw new Error("e is not a primitiveEqual"); 
+		}
+		
+		if (varExp instanceof VariableReference) {
+			//cases of varRef = primVal
+			VariableReference var = (VariableReference) varExp;
+			return var.getReferenceName().toUpperCase()+"_"+prim.getValue();
+		} else if(varExp instanceof SpecExp) {
+			//cases of next(VarRef) = primVal
+			SpecExp exp = (SpecExp) varExp;
+			if(exp.getOperator().equals(Operator.PRIME) &&
+					exp.getChildren()[0] instanceof VariableReference) {
+				//return next(var_primval)
+				String fluentName = ((VariableReference) exp.getChildren()[0]).getReferenceName().toUpperCase()+"_"+prim.getValue();
+				return "X(!" + clockKind + " W (" + clockKind + " && " + fluentName + "))";
+			} else {
+				throw new Error("new primitiveEqual");
+			}
+		}else {
+			throw new Error("the other child of primitiveEqual is a new type"); 
+		}		
+	}
+	
+	private boolean isPrimitiveEqual(SpecExp e) {
+		Spec left = e.getChildren()[0];
+		Spec right = e.getChildren()[1];
+		
+		//cases of varRef = primVal
+		if ((left instanceof VariableReference && right instanceof PrimitiveValue)
+				|| (right instanceof VariableReference && left instanceof PrimitiveValue)) {
+			return true;
+		}
+		
+		//cases of next(VarRef) = primVal
+		if (left instanceof PrimitiveValue) {
+			SpecExp rightE = (SpecExp) right;
+			if(rightE.getOperator().equals(Operator.PRIME) &&
+					rightE.getChildren()[0] instanceof VariableReference) {
+				return true;
+			} else {
+				throw new Error("new primitiveEqual");
+			}
+		}
+		if (right instanceof PrimitiveValue) {
+			SpecExp leftE = (SpecExp) left;
+			if(leftE.getOperator().equals(Operator.PRIME) &&
+					leftE.getChildren()[0] instanceof VariableReference) {
+				return true;
+			} else {
+				throw new Error("new primitiveEqual");
+			}
+		}
+		
+		return false;
+		//this is not a primitive case, it can be dealt with automatically
+		//the problematic ones have PrimitiveValue, which is part of the name of the fluent in MTSA.
+//		//cases of varRef = next(varRef)
+//		if (left instanceof VariableReference) {
+//			SpecExp rightE = (SpecExp) right;
+//			if(rightE.getOperator().equals(Operator.PRIME) &&
+//					rightE.getChildren()[0] instanceof VariableReference) {
+//				return true;
+//			}
+//		}
+//		if (right instanceof VariableReference) {
+//			SpecExp leftE = (SpecExp) left;
+//			if(leftE.getOperator().equals(Operator.PRIME) &&
+//					leftE.getChildren()[0] instanceof VariableReference) {
+//				return true;
+//			}
+//		}
 	}
 	
 	private boolean hasNotNext(Spec s, boolean insideNot) {

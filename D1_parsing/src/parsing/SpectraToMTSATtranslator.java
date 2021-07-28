@@ -37,7 +37,7 @@ public class SpectraToMTSATtranslator {
 	
 	public static void main(String[] args) throws ErrorsInSpectraException, SpectraTranslationException {
 
-		String name = "GyroLTL_390_GyroAspect";
+		String name = "HumanoidLTL_747_Humanoid";
 		String specPath = name + ".spectra";
 
 		// get the Xtext-based input parser
@@ -143,8 +143,8 @@ public class SpectraToMTSATtranslator {
 				+ "\n"
 				+ "controllerSpec Goal = {\n"
 				+ "       assumption = {"
-				+ getLivenessAsm(false) + ", A_clock}  //user liveness assumptions + A_clock\n"
-				+ "       liveness = {"+getLivenessGar(false)+"}  //user leness guarantees\n"
+				+ getLivenessAsm(false) + "}  //user liveness assumptions + A_clock\n"
+				+ "       liveness = {"+getLivenessGar(false)+"}  //user liveeness guarantees\n"
 				+ "       controllable = {ControlledActions}\n"
 				+ "}\n\n"
 				+ "heuristic ||Control = (Env)~{Goal}.\n"
@@ -177,6 +177,7 @@ public class SpectraToMTSATtranslator {
 		for(Integer i=0; i<justiceAssumptions; i++) {
 			justice.add(extra+"A_l"+i.toString());
 		}
+		justice.add("A_clock");
 		if(isForAssert) {
 			return justice.stream().collect(Collectors.joining(" && "));
 		}else {
@@ -210,6 +211,10 @@ public class SpectraToMTSATtranslator {
 				}
 			}
 			out.println("\n");
+		}
+		if(justiceGuarantees == 0) {//if there are no justice guarantees, add a trivial one
+			out.println("assert G_l0 = True");
+			justiceGuarantees += 1;
 		}
 	}
 	
