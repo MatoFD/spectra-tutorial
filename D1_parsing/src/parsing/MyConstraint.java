@@ -2,6 +2,7 @@ package parsing;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -267,14 +268,30 @@ public class MyConstraint {
 		if (varExp instanceof VariableReference) {
 			//cases of varRef = primVal
 			VariableReference var = (VariableReference) varExp;
-			return negation + var.getReferenceName().toUpperCase()+"_"+prim.getValue();
+			if (var.getVariable().getType().isBoolean()) {
+				if(!prim.isPropSpec()){
+					throw new Error("boolean variables can only be true or false, no other primitiveValue");
+				}
+				return (negation + var.getReferenceName()).toUpperCase();
+			}else {
+				return (negation + var.getReferenceName()+"_"+prim.getValue()).toUpperCase();
+			}
 		} else if(varExp instanceof SpecExp) {
 			//cases of next(VarRef) = primVal
 			SpecExp exp = (SpecExp) varExp;
 			if(exp.getOperator().equals(Operator.PRIME) &&
 					exp.getChildren()[0] instanceof VariableReference) {
 				//return next(var_primval)
-				String fluentName = ((VariableReference) exp.getChildren()[0]).getReferenceName().toUpperCase()+"_"+prim.getValue();
+				VariableReference var = (VariableReference) exp.getChildren()[0];
+				String fluentName;
+				if (var.getVariable().getType().isBoolean()) {
+					if(!prim.isPropSpec()){
+						throw new Error("boolean variables can only be true or false, no other primitiveValue");
+					}
+					fluentName = (var.getReferenceName()).toUpperCase();
+				}else {
+					fluentName = (var.getReferenceName()+"_"+prim.getValue()).toUpperCase();
+				}
 				return "X(!" + clockKind + " W (" + clockKind + " && " + negation + fluentName + "))";
 			} else {
 				throw new Error("new primitiveEqual");
@@ -301,10 +318,16 @@ public class MyConstraint {
 			rightVar = ((VariableReference)(((SpecExp) right).getChildren()[0])).getVariable();
 		}
 			
-		List<String> leftFluents = leftVar.getNoNameActions(); 
-		Collections.sort(leftFluents);
-		List<String> rightFluents = rightVar.getNoNameActions();
-		Collections.sort(rightFluents);
+		
+		List<String> leftFluents = new ArrayList<String>(Arrays.asList("a")); 
+		List<String> rightFluents = new ArrayList<String>(Arrays.asList("a"));
+		if(!(leftVar.getType().isBoolean() && rightVar.getType().isBoolean())) {
+			leftFluents = leftVar.getNoNameActions();
+			rightFluents = rightVar.getNoNameActions();
+			Collections.sort(leftFluents);
+			Collections.sort(rightFluents);
+		}
+		
 		if(!leftFluents.equals(rightFluents)) {
 			throw new Error("two vars cannot be equal if their possible values don't match");
 		}else {

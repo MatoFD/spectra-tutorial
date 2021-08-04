@@ -37,44 +37,59 @@ public class SpectraToMTSATtranslator {
 	
 	public static void main(String[] args) throws ErrorsInSpectraException, SpectraTranslationException {
 
-		String name = "HumanoidLTL_747_Humanoid";
-		String specPath = name + ".spectra";
-
-		// get the Xtext-based input parser
-		SpectraInputProviderNoIDE sip = new SpectraInputProviderNoIDE();
-		// parse (via Xtext) and translate to abstract syntax (Xtext independent)
-		GameInput gi = sip.getGameInput(specPath);
-
-		System.out.println("\nPrinting vars and constraints of system player:");
-		Player sys = gi.getSys();
-		printVars(sys);
-		printConstraints(sys);
-		
-		System.out.println("Printing vars and constraints of environment player:");
-		Player env = gi.getEnv();
-		printVars(env);
-		printConstraints(env);
-
-		System.out.println("\nTranslating to Spectra Kernel.");
-		// important step to reduce language features to the Spectra Kernel
-		TranslationProvider.translate(gi);
-		Player aux = gi.getAux();
-
-		System.out.println("\nPrinting vars and constraints of system and aux players:");
-		printVars(sys);
-		printVars(aux);
-		printConstraints(sys);
-		printConstraints(aux);
-		
-		System.out.println("\nPrinting vars and constraints of environment player:");
-		printVars(env);
-		printConstraints(env);
-		
-		translateToFSP(name, gi);
+	    String currentPath = new File("").getAbsolutePath();
+		File benchmark = new File(currentPath.concat("/SYNTECH15"));
+		for (String name : benchmark.list()) {
+			if(name.equals("unrealizable") 
+					|| name.substring(3,14).equals("SelfParking")) {continue;}
+			name = name.substring(0, name.length() - 8);//remove .spectra
+			
+			//for debugging
+			//name = "V2-SelfParkingSmartCarLTL_965_AspectLTLAspect";
+			
+			String specPath = "SYNTECH15/" + name + ".spectra";
+	
+			// get the Xtext-based input parser
+			SpectraInputProviderNoIDE sip = new SpectraInputProviderNoIDE();
+			// parse (via Xtext) and translate to abstract syntax (Xtext independent)
+			GameInput gi = sip.getGameInput(specPath);
+	
+	//		System.out.println("\nPrinting vars and constraints of system player:");
+	//		Player sys = gi.getSys();
+	//		printVars(sys);
+	//		printConstraints(sys);
+	//		
+	//		System.out.println("Printing vars and constraints of environment player:");
+	//		Player env = gi.getEnv();
+	//		printVars(env);
+	//		printConstraints(env);
+	
+			System.out.println("\nTranslating " +name+ " to Spectra Kernel.");
+			// important step to reduce language features to the Spectra Kernel
+			TranslationProvider.translate(gi);
+	//		Player aux = gi.getAux();
+	
+	//		System.out.println("\nPrinting vars and constraints of system and aux players:");
+	//		printVars(sys);
+	//		printVars(aux);
+	//		printConstraints(sys);
+	//		printConstraints(aux);
+			
+	//		System.out.println("\nPrinting vars and constraints of environment player:");
+	//		printVars(env);
+	//		printConstraints(env);
+			
+			translateToFSP(name, gi);
+		}
 	}
 
 	private static void translateToFSP(String name, GameInput gi) {
-		String filename = name + ".fsp";
+		safetyAssumptions = 0;
+		justiceAssumptions = 0;
+		safetyGuarantees = 0;
+		justiceGuarantees = 0;
+		
+		String filename = "./translated/SYNTECH15/" + name + ".fsp";
 		PrintWriter out;
 		File f = new File(filename);
 		if(!f.isFile()) { 
@@ -213,7 +228,8 @@ public class SpectraToMTSATtranslator {
 			out.println("\n");
 		}
 		if(justiceGuarantees == 0) {//if there are no justice guarantees, add a trivial one
-			out.println("assert G_l0 = True");
+			out.println("fluent True = <tick, tock>");
+			out.println("assert G_l0 = (True || !True)");
 			justiceGuarantees += 1;
 		}
 	}
@@ -300,26 +316,6 @@ public class SpectraToMTSATtranslator {
 		}
 		return answer;
 	}
-	
-	//moved to Variable
-//	public static List<String> getActions(Variable var){
-//		List<String> answer = new ArrayList<String>();
-//		String name = var.getName().toLowerCase();
-//		if(var.getType().isBoolean()) {
-//			answer.add(name);
-//			answer.add("not_"+name);
-//		} else if(var.getType().isInteger()) {
-//			for (Integer i = var.getType().getLower(); i<=var.getType().getUpper(); i++) {
-//				answer.add(name+"["+Integer.toString(i)+"]");
-//			}
-//		} else {
-//			// We assume for now that the var is an enum if not bool or int.
-//			for (String action : var.getType().getValues()) {
-//				answer.add(name+"."+action.toLowerCase());
-//			}
-//		}
-//		return answer;
-//	}
 	
 	private static void printActions(PrintWriter out, List<String> actions, String name) {
 		String ans = actions.stream().collect(Collectors.joining(", "));
