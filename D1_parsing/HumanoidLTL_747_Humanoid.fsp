@@ -127,15 +127,27 @@ ltl_property G3 = [](tick -> (X(!tick W (tick && !SPEC_NEXTMOVEMODE_BWD)) || (SP
  //(X(!tick W (tick && SPEC_NEXTMOVEMODE_BWD)) -> (SPEC_NEXTMOVEMODE_FWD || SPEC_NEXTMOVEMODE_BWD))
 
 ltl_property G4 = [](tick -> (SPEC_NEXTMOVEMODE_BWD -> X(!tick W (tick && (SPEC_NEXTMOVEMODE_FWD || SPEC_NEXTMOVEMODE_BWD)))))
-ltl_property G5 = [](tick -> (((SPEC_SPECSTATE_Q0 && SPEC_NEXTMOVEMODE_FWD) && X(!tick W (tick && SPEC_NEXTMOVEMODE_BWD))) -> X(!tick W (tick && SPEC_SPECSTATE_Q1))))
-ltl_property G6 = [](tick -> (((SPEC_SPECSTATE_Q1 && SPEC_NEXTMOVEMODE_BWD) && X(!tick W (tick && SPEC_NEXTMOVEMODE_FWD))) -> X(!tick W (tick && SPEC_SPECSTATE_Q2))))
-ltl_property G7 = [](tick -> (tick && !((SPEC_SPECSTATE_Q2 && SPEC_NEXTMOVEMODE_FWD) && X(!tick W (tick && SPEC_NEXTMOVEMODE_BWD)))))
-ltl_property G8 = [](tick -> ((SPEC_SPECSTATE_Q1 && X(!tick W (tick && SPEC_NEXTMOVEMODE_BWD))) -> X(!tick W (tick && SPEC_SPECSTATE_Q1))))
-ltl_property G9 = [](tick -> ((SPEC_SPECSTATE_Q2 && X(!tick W (tick && SPEC_NEXTMOVEMODE_FWD))) -> X(!tick W (tick && SPEC_SPECSTATE_Q2))))
+ltl_property G5 = [](tick -> (((!SPEC_SPECSTATE_Q0 || !SPEC_NEXTMOVEMODE_FWD) || X(!tick W (tick && !SPEC_NEXTMOVEMODE_BWD))) || X(!tick W (tick && SPEC_SPECSTATE_Q1))))
+ //(((SPEC_SPECSTATE_Q0 && SPEC_NEXTMOVEMODE_FWD) && X(!tick W (tick && SPEC_NEXTMOVEMODE_BWD))) -> X(!tick W (tick && SPEC_SPECSTATE_Q1)))
+
+ltl_property G6 = [](tick -> (((!SPEC_SPECSTATE_Q1 || !SPEC_NEXTMOVEMODE_BWD) || X(!tick W (tick && !SPEC_NEXTMOVEMODE_FWD))) || X(!tick W (tick && SPEC_SPECSTATE_Q2))))
+ //(((SPEC_SPECSTATE_Q1 && SPEC_NEXTMOVEMODE_BWD) && X(!tick W (tick && SPEC_NEXTMOVEMODE_FWD))) -> X(!tick W (tick && SPEC_SPECSTATE_Q2)))
+
+ltl_property G7 = [](tick -> ((!SPEC_SPECSTATE_Q2 || !SPEC_NEXTMOVEMODE_FWD) || X(!tick W (tick && !SPEC_NEXTMOVEMODE_BWD))))
+ //(tick && !((SPEC_SPECSTATE_Q2 && SPEC_NEXTMOVEMODE_FWD) && X(!tick W (tick && SPEC_NEXTMOVEMODE_BWD))))
+
+ltl_property G8 = [](tick -> ((!SPEC_SPECSTATE_Q1 || X(!tick W (tick && !SPEC_NEXTMOVEMODE_BWD))) || X(!tick W (tick && SPEC_SPECSTATE_Q1))))
+ //((SPEC_SPECSTATE_Q1 && X(!tick W (tick && SPEC_NEXTMOVEMODE_BWD))) -> X(!tick W (tick && SPEC_SPECSTATE_Q1)))
+
+ltl_property G9 = [](tick -> ((!SPEC_SPECSTATE_Q2 || X(!tick W (tick && !SPEC_NEXTMOVEMODE_FWD))) || X(!tick W (tick && SPEC_SPECSTATE_Q2))))
+ //((SPEC_SPECSTATE_Q2 && X(!tick W (tick && SPEC_NEXTMOVEMODE_FWD))) -> X(!tick W (tick && SPEC_SPECSTATE_Q2)))
+
 ltl_property G10 = [](tick -> (SPEC_NEXTMOVEMODE_TURN_LEFT -> X(!tick W (tick && SPEC_SPECSTATE_Q0))))
-ltl_property G11 = [](tick -> (BUTTON_PRESSED -> X(!tick W (tick && (SPEC_NEXTHEAD <-> HEADING)))))
-ltl_property G12 = [](tick -> (BUTTON_FREE -> (X(!tick W (tick && SPEC_NEXTHEAD)) <-> SPEC_NEXTHEAD)))
-ltl_property G13 = [](tick -> (X(!tick W (tick && SPEC_TURNSTATE_T0)) -> (SPEC_TURNSTATE_T0 || SPEC_TURNSTATE_T3)))
+ltl_property G11 = [](tick -> (BUTTON_PRESSED -> X(!tick W (tick && ((SPEC_NEXTHEAD_N <-> HEADING_N) && (SPEC_NEXTHEAD_SO <-> HEADING_SO))))))
+ltl_property G12 = [](tick -> (BUTTON_FREE -> (((X(!tick W (tick && (!SPEC_NEXTHEAD_N))) || SPEC_NEXTHEAD_N) && (!SPEC_NEXTHEAD_N || X(!tick W (tick && (SPEC_NEXTHEAD_N))))) && ((X(!tick W (tick && (!SPEC_NEXTHEAD_SO))) || SPEC_NEXTHEAD_SO) && (!SPEC_NEXTHEAD_SO || X(!tick W (tick && (SPEC_NEXTHEAD_SO))))))))
+ltl_property G13 = [](tick -> (X(!tick W (tick && !SPEC_TURNSTATE_T0)) || (SPEC_TURNSTATE_T0 || SPEC_TURNSTATE_T3)))
+ //(X(!tick W (tick && SPEC_TURNSTATE_T0)) -> (SPEC_TURNSTATE_T0 || SPEC_TURNSTATE_T3))
+
 ltl_property G14 = [](tick -> ((SPEC_TURNSTATE_T0 && !SPEC_NEXTMOVEMODE_TURN_LEFT) -> X(!tick W (tick && SPEC_TURNSTATE_T0))))
 ltl_property G15 = [](tick -> (((SPEC_NEXTMOVEMODE_TURN_LEFT && PREV_39_0) && SPEC_TURNSTATE_T0) -> X(!tick W (tick && SPEC_TURNSTATE_T1))))
 ltl_property G16 = [](tick -> (SPEC_TURNSTATE_T1 -> (X(!tick W (tick && SPEC_TURNSTATE_T2)) && SPEC_NEXTMOVEMODE_TURN_LEFT)))
@@ -143,21 +155,27 @@ ltl_property G17 = [](tick -> ((SPEC_TURNSTATE_T2 && SPEC_NEXTMOVEMODE_TURN_LEFT
 ltl_property G18 = [](tick -> ((SPEC_TURNSTATE_T2 && SPEC_NEXTMOVEMODE_FWD) -> X(!tick W (tick && SPEC_TURNSTATE_T3))))
 ltl_property G19 = [](tick -> ((SPEC_TURNSTATE_T3 && SPEC_NEXTMOVEMODE_FWD) -> X(!tick W (tick && SPEC_TURNSTATE_T0))))
 ltl_property G20 = [](tick -> ((SPEC_TURNSTATE_T3 && !SPEC_NEXTMOVEMODE_FWD) -> X(!tick W (tick && SPEC_TURNSTATE_T2))))
-ltl_property G21 = [](tick -> ((SPEC_TURNSTATE_T0 && X(!tick W (tick && SPEC_TURNSTATE_T1))) <-> (LEFTMOTOR_CALIB_TURN && RIGHTMOTOR_CALIB_TURN)))
-ltl_property G22 = [](tick -> (X(!tick W (tick && SPEC_TURNSTATE_T2)) <-> (LEFTMOTOR_FWD && RIGHTMOTOR_TURN_FWD)))
+ltl_property G21 = [](tick -> (((!SPEC_TURNSTATE_T0 || X(!tick W (tick && !SPEC_TURNSTATE_T1))) || (LEFTMOTOR_CALIB_TURN && RIGHTMOTOR_CALIB_TURN)) && ((!LEFTMOTOR_CALIB_TURN || !RIGHTMOTOR_CALIB_TURN) || (SPEC_TURNSTATE_T0 && X(!tick W (tick && SPEC_TURNSTATE_T1))))))
+ //((SPEC_TURNSTATE_T0 && X(!tick W (tick && SPEC_TURNSTATE_T1))) <-> (LEFTMOTOR_CALIB_TURN && RIGHTMOTOR_CALIB_TURN))
+
+ltl_property G22 = [](tick -> ((X(!tick W (tick && !SPEC_TURNSTATE_T2)) || (LEFTMOTOR_FWD && RIGHTMOTOR_TURN_FWD)) && ((!LEFTMOTOR_FWD || !RIGHTMOTOR_TURN_FWD) || X(!tick W (tick && SPEC_TURNSTATE_T2)))))
+ //(X(!tick W (tick && SPEC_TURNSTATE_T2)) <-> (LEFTMOTOR_FWD && RIGHTMOTOR_TURN_FWD))
+
 ltl_property G23 = [](tick -> (SPEC_TURNSTATE_T2 <-> (LEFTMOTOR_BWD && RIGHTMOTOR_TURN_BWD)))
-ltl_property G24 = [](tick -> ((SPEC_TURNSTATE_T3 && X(!tick W (tick && SPEC_TURNSTATE_T0))) <-> (LEFTMOTOR_CALIB_FWD && RIGHTMOTOR_CALIB_FWD)))
+ltl_property G24 = [](tick -> (((!SPEC_TURNSTATE_T3 || X(!tick W (tick && !SPEC_TURNSTATE_T0))) || (LEFTMOTOR_CALIB_FWD && RIGHTMOTOR_CALIB_FWD)) && ((!LEFTMOTOR_CALIB_FWD || !RIGHTMOTOR_CALIB_FWD) || (SPEC_TURNSTATE_T3 && X(!tick W (tick && SPEC_TURNSTATE_T0))))))
+ //((SPEC_TURNSTATE_T3 && X(!tick W (tick && SPEC_TURNSTATE_T0))) <-> (LEFTMOTOR_CALIB_FWD && RIGHTMOTOR_CALIB_FWD))
+
 assert G_l1 = (tick && SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED)
 
 
-ltl_property G25 = [](tick -> ((X(!tick W (tick && !SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED)) || (((!HEADING || SPEC_NEXTHEAD) && (!SPEC_NEXTHEAD || HEADING)) || (SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED && !NOISE_NOISE))) && ((((HEADING && !SPEC_NEXTHEAD) || (SPEC_NEXTHEAD && !HEADING)) && (!SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED || NOISE_NOISE)) || X(!tick W (tick && SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED)))))
- //(X(!tick W (tick && SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED)) <-> ((HEADING <-> SPEC_NEXTHEAD) || (SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED && !NOISE_NOISE)))
+ltl_property G25 = [](tick -> ((X(!tick W (tick && !SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED)) || (((HEADING_N <-> SPEC_NEXTHEAD_N) && (HEADING_SO <-> SPEC_NEXTHEAD_SO)) || (SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED && !NOISE_NOISE))) && (((!(HEADING_N <-> SPEC_NEXTHEAD_N) || !(HEADING_SO <-> SPEC_NEXTHEAD_SO)) && (!SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED || NOISE_NOISE)) || X(!tick W (tick && SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED)))))
+ //(X(!tick W (tick && SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED)) <-> (((HEADING_N <-> SPEC_NEXTHEAD_N) && (HEADING_SO <-> SPEC_NEXTHEAD_SO)) || (SYS_CONSTRAINT_29_RESPONDSTO_RESPONDED && !NOISE_NOISE)))
 
-ltl_property G26 = [](tick -> ((X(!tick W (tick && !ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED)) || ((OBSTACLE_CLEAR && X(!tick W (tick && OBSTACLE_CLEAR))) || (ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED && !SPEC_TURNSTATE_T1))) && (((!OBSTACLE_CLEAR || !X(!tick W (tick && OBSTACLE_CLEAR))) && (!ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED || SPEC_TURNSTATE_T1)) || X(!tick W (tick && ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED)))))
+ltl_property G26 = [](tick -> ((X(!tick W (tick && !ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED)) || ((OBSTACLE_CLEAR && X(!tick W (tick && OBSTACLE_CLEAR))) || (ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED && !SPEC_TURNSTATE_T1))) && (((!OBSTACLE_CLEAR || X(!tick W (tick && !OBSTACLE_CLEAR))) && (!ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED || SPEC_TURNSTATE_T1)) || X(!tick W (tick && ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED)))))
  //(X(!tick W (tick && ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED)) <-> ((OBSTACLE_CLEAR && X(!tick W (tick && OBSTACLE_CLEAR))) || (ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED && !SPEC_TURNSTATE_T1)))
 
-ltl_property G27 = [](tick -> ((X(!tick W (tick && !ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED)) || ((((!HEADING || SPEC_NEXTHEAD) && (!SPEC_NEXTHEAD || HEADING)) || !SPEC_NEXTMOVEMODE_TURN_LEFT) || (ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED && !SPEC_NEXTMOVEMODE_TURN_LEFT))) && (((((HEADING && !SPEC_NEXTHEAD) || (SPEC_NEXTHEAD && !HEADING)) && SPEC_NEXTMOVEMODE_TURN_LEFT) && (!ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED || SPEC_NEXTMOVEMODE_TURN_LEFT)) || X(!tick W (tick && ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED)))))
- //(X(!tick W (tick && ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED)) <-> (((HEADING <-> SPEC_NEXTHEAD) || !SPEC_NEXTMOVEMODE_TURN_LEFT) || (ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED && !SPEC_NEXTMOVEMODE_TURN_LEFT)))
+ltl_property G27 = [](tick -> ((X(!tick W (tick && !ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED)) || ((((HEADING_N <-> SPEC_NEXTHEAD_N) && (HEADING_SO <-> SPEC_NEXTHEAD_SO)) || !SPEC_NEXTMOVEMODE_TURN_LEFT) || (ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED && !SPEC_NEXTMOVEMODE_TURN_LEFT))) && ((((!(HEADING_N <-> SPEC_NEXTHEAD_N) || !(HEADING_SO <-> SPEC_NEXTHEAD_SO)) && SPEC_NEXTMOVEMODE_TURN_LEFT) && (!ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED || SPEC_NEXTMOVEMODE_TURN_LEFT)) || X(!tick W (tick && ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED)))))
+ //(X(!tick W (tick && ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED)) <-> ((((HEADING_N <-> SPEC_NEXTHEAD_N) && (HEADING_SO <-> SPEC_NEXTHEAD_SO)) || !SPEC_NEXTMOVEMODE_TURN_LEFT) || (ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED && !SPEC_NEXTMOVEMODE_TURN_LEFT)))
 
 ltl_property G28 = [](tick -> ((X(!tick W (tick && !PREV_39_0)) || SPEC_NEXTMOVEMODE_FWD) && (!SPEC_NEXTMOVEMODE_FWD || X(!tick W (tick && PREV_39_0)))))
  //(X(!tick W (tick && PREV_39_0)) <-> SPEC_NEXTMOVEMODE_FWD)
@@ -169,7 +187,7 @@ ltl_property G29 = [](tick -> ((X(!tick W (tick && !PREV_52_1)) || SPEC_NEXTMOVE
 
 constraint A0 = [](tock -> ((PREV_39_0 && OBSTACLE_BLOCKED) -> X(!tock W (tock && OBSTACLE_BLOCKED))))
 constraint A1 = [](tock -> ((PREV_52_1 && OBSTACLE_CLEAR) -> X(!tock W (tock && !OBSTACLE_BLOCKED))))
-constraint A2 = [](tock -> ((SPEC_NEXTMOVEMODE_FWD || SPEC_NEXTMOVEMODE_BWD) -> (X(!tock W (tock && HEADING)) <-> HEADING)))
+constraint A2 = [](tock -> ((SPEC_NEXTMOVEMODE_FWD || SPEC_NEXTMOVEMODE_BWD) -> (((X(!tock W (tock && (!HEADING_N))) || HEADING_N) && (!HEADING_N || X(!tock W (tock && (HEADING_N))))) && ((X(!tock W (tock && (!HEADING_SO))) || HEADING_SO) && (!HEADING_SO || X(!tock W (tock && (HEADING_SO))))))))
 assert A_l0 = (tock && ENV_CONSTRAINT_53_RESPONDSTO_RESPONDED)
 assert A_l1 = (tock && ENV_CONSTRAINT_55_RESPONDSTO_RESPONDED)
 

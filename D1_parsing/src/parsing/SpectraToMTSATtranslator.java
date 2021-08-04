@@ -294,31 +294,32 @@ public class SpectraToMTSATtranslator {
 	private static List<String> getActions(List<Variable> vars, List<MyVar> playersMyVars){
 		List<String> answer = new ArrayList<String>();
 		for (Variable var : vars) {
-			List<String> current = getActions(var);
+			List<String> current = var.getActions();
 			answer.addAll(current);
 			playersMyVars.add(new MyVar(var.getName(), current, var.getType()));
 		}
 		return answer;
 	}
 	
-	private static List<String> getActions(Variable var){
-		List<String> answer = new ArrayList<String>();
-		String name = var.getName().toLowerCase();
-		if(var.getType().isBoolean()) {
-			answer.add(name);
-			answer.add("not_"+name);
-		} else if(var.getType().isInteger()) {
-			for (Integer i = var.getType().getLower(); i<=var.getType().getUpper(); i++) {
-				answer.add(name+"["+Integer.toString(i)+"]");
-			}
-		} else {
-			// We assume for now that the var is an enum if not bool or int.
-			for (String action : var.getType().getValues()) {
-				answer.add(name+"."+action.toLowerCase());
-			}
-		}
-		return answer;
-	}
+	//moved to Variable
+//	public static List<String> getActions(Variable var){
+//		List<String> answer = new ArrayList<String>();
+//		String name = var.getName().toLowerCase();
+//		if(var.getType().isBoolean()) {
+//			answer.add(name);
+//			answer.add("not_"+name);
+//		} else if(var.getType().isInteger()) {
+//			for (Integer i = var.getType().getLower(); i<=var.getType().getUpper(); i++) {
+//				answer.add(name+"["+Integer.toString(i)+"]");
+//			}
+//		} else {
+//			// We assume for now that the var is an enum if not bool or int.
+//			for (String action : var.getType().getValues()) {
+//				answer.add(name+"."+action.toLowerCase());
+//			}
+//		}
+//		return answer;
+//	}
 	
 	private static void printActions(PrintWriter out, List<String> actions, String name) {
 		String ans = actions.stream().collect(Collectors.joining(", "));
