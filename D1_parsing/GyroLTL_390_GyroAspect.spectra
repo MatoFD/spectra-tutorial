@@ -28,8 +28,8 @@ guarantee
 assumption
   APattern : respondsTo(!(balancer=FWD|balancer=STP),(distSense=CLEAR));
 
-guarantee
-  APatternBis : respondsTo(!(balancer=TURN_LEFT|balancer=TURN_RIGHT),(distSense=CLEAR));
+//guarantee
+//  APatternBis : respondsTo(!(balancer=TURN_LEFT|balancer=TURN_RIGHT),(distSense=CLEAR));
 
 assumption
   ALive: GF (isReady);
