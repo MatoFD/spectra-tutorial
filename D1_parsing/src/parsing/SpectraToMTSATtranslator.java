@@ -35,20 +35,30 @@ public class SpectraToMTSATtranslator {
 	private static int safetyGuarantees = 0;
 	private static int justiceGuarantees = 0;
 	private static int initialConstraints = 0;
+	private static String folder = "SYNTECH15";
 	
 	public static void main(String[] args) throws ErrorsInSpectraException, SpectraTranslationException {
 
 	    String currentPath = new File("").getAbsolutePath();
-		File benchmark = new File(currentPath.concat("/SYNTECH15"));
-		for (String name : benchmark.list()) {
+		File benchmark = new File(currentPath.concat("/"+folder));
+		List<String> namesList = new ArrayList<String>(Arrays.asList(benchmark.list()));
+		for (String auxName : namesList) {
+			if (auxName.equals("unrealizable")) {
+				File benchmarkUnrealizable = new File(currentPath.concat("/"+folder+"/unrealizable"));
+				namesList.remove(auxName);
+				namesList.addAll(Arrays.asList(benchmarkUnrealizable.list()).stream().map(s -> "unrealizable/"+s).collect(Collectors.toList()));
+				break;
+			}
+		}
+		for (String name : namesList) {
 			if(name.equals("unrealizable") 
 					|| name.substring(3,14).equals("SelfParking")) {continue;}
 			name = name.substring(0, name.length() - 8);//remove .spectra
 			
 			//for debugging
-			name = "ColorSortLTL2TAG_789_ColorSort";
+			//name = "ColorSortLTL2TAG_789_ColorSort";
 			
-			String specPath = "SYNTECH15/" + name + ".spectra";
+			String specPath = folder + "/" + name + ".spectra";
 	
 			// get the Xtext-based input parser
 			SpectraInputProviderNoIDE sip = new SpectraInputProviderNoIDE();
@@ -91,7 +101,7 @@ public class SpectraToMTSATtranslator {
 		justiceGuarantees = 0;
 		initialConstraints = 0;
 		
-		String filename = "./translated/SYNTECH15/" + name + ".fsp";
+		String filename = "./translated/" + folder + "/" + name + ".fsp";
 		PrintWriter out;
 		File f = new File(filename);
 		if(!f.isFile()) { 

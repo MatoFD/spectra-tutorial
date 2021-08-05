@@ -61,9 +61,10 @@ public class MyConstraint {
 				String answer = subParse(specification.getChildren()[0], clockKind);
 				return "X(!" + clockKind + " W (" + clockKind + " && " + answer + "))";
 			} else {
+				String op = MTSAOperator(specification.getOperator());
 				String left = subParse(specification.getChildren()[0], clockKind);
 				String right = subParse(specification.getChildren()[1], clockKind);
-				return "(" + left + MTSAOperator(specification.getOperator()) + right + ")";
+				return "(" + left + op + right + ")";
 			}
 		} else if (spec instanceof PrimitiveValue) {
 			throw new Error("Line should be unreachable because we deal with var=PrimVal earlier");
@@ -119,7 +120,7 @@ public class MyConstraint {
 			case IFF:
 				return " <-> ";
 			default:
-				throw new Error("new kind of SpecExp");
+				throw new Error("new kind of SpecExp: " + op.toString());
 		}
 	}
 	
