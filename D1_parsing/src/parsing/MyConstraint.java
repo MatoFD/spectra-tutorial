@@ -20,7 +20,7 @@ public class MyConstraint {
 	
 	public MyConstraint(Constraint cons, String clockKind, int propertyNumber) {
 		if (cons.isInitial()) {
-			buildInitial(cons.getSpec(), clockKind);
+			buildInitial(cons.getSpec(), clockKind, propertyNumber);
 		} else if (cons.isSafety()) {
 			buildSafety(cons.getSpec(), clockKind, propertyNumber);
 		} else if (cons.isJustice()) {
@@ -33,18 +33,16 @@ public class MyConstraint {
 	public String subParse(Spec spec, String clockKind) {
 		if(spec instanceof VariableReference) {
 			VariableReference varRef = (VariableReference) spec;
-			String varName = makeVarName(varRef.getReferenceName());
 			if(checkIfIsNextVar(varRef)) {
 				throw new Error("should never happen, we removed PRIME translators.");
 			}else {
-				return varName;
+				return makeVarName(varRef.getReferenceName());
 			}
 		} else if(spec instanceof SpecExp) {
 			SpecExp specification = (SpecExp) spec;
 			if(specification.getOperator().equals(Operator.EQUALS)) {
 				if (!isPrimitiveEqual(specification)) {
 					throw new Error("occurence of notPrimitiveEqual");
-//					return subParse(new SpecExp(Operator.IFF, specification.getChildren()[0], specification.getChildren()[1]), clockKind);
 				}
 				//translate "left=right" to "left_right", because we have fluents, not variables in MTSA.
 				return primitiveEqualProp(specification, clockKind, false);
@@ -68,54 +66,47 @@ public class MyConstraint {
 				return "(" + left + MTSAOperator(specification.getOperator()) + right + ")";
 			}
 		} else if (spec instanceof PrimitiveValue) {
-			PrimitiveValue val = (PrimitiveValue) spec;
-			return val.getValue();
+			throw new Error("Line should be unreachable because we deal with var=PrimVal earlier");
+//			PrimitiveValue val = (PrimitiveValue) spec;
+//			return val.getValue();
 		} else {
 			throw new Error("we need another type of Spec to parse");
 		}		
 	}
 		
-	public Pair<String, String> initialParse(Spec spec, String clockKind) {
-		String varName = ""; //only matters for varRefs, primitiveVals and operator NOT, since it's for initial constraints
-		String LTLProp = "";
-		if(spec instanceof VariableReference) {
-			VariableReference varRef = (VariableReference) spec;
-			varName = makeVarName(varRef.getReferenceName());
-			if(checkIfIsNextVar(varRef)) {
-				throw new Error("should never happen, we removed PRIME translators.");
-			}else {
-				LTLProp = clockKind + " && " + varName;
-			}
-		} else if(spec instanceof SpecExp) {
-			SpecExp specification = (SpecExp) spec;
-			if(specification.getOperator().equals(Operator.EQUALS)) {
-				if (!isPrimitiveEqual(specification)) {
-					throw new Error("New type of equal, replace with IFF, as in subParse?");
-				}
-				VariableReference left = (VariableReference) specification.getChildren()[0];
-				varName = makeVarName(left.getReferenceName());
-				LTLProp = clockKind + " && " + subParse(specification, clockKind); //only "right", not "left=right" because we have fluents, not variables in MTSA
-			} else if(specification.getOperator().equals(Operator.NOT)) {
-				String answer = subParse(specification, clockKind);
-				varName = answer.substring(1); //remove the initial "!" 
-				LTLProp = clockKind + " && " + answer; //the NOT is processed in the subParse
-			} else if(specification.getOperator().equals(Operator.PRIME)) {
-				String answer = subParse(specification.getChildren()[0], clockKind);
-				LTLProp = "X(!" + clockKind + " W (" + clockKind + " && " + answer + "))";
-			} else {
-				String left = subParse(specification.getChildren()[0], clockKind);
-				String right = subParse(specification.getChildren()[1], clockKind);
-				LTLProp = left + MTSAOperator(specification.getOperator()) + right;
-			}
-		} else if (spec instanceof PrimitiveValue) {
-			PrimitiveValue val = (PrimitiveValue) spec;
-			varName = val.getValue();
-			LTLProp = val.getValue();
-		} else {
-			throw new Error("we need another type of Spec to parse");
-		}		
-		return new Pair<String, String>(varName, "("+LTLProp+")");
-	}
+//	public String initialParse(Spec spec, String clockKind) {
+//		if(spec instanceof VariableReference) {
+//			VariableReference varRef = (VariableReference) spec;
+//			if(checkIfIsNextVar(varRef)) {
+//				throw new Error("should never happen, we removed PRIME translators.");
+//			}else {
+//				return "(" + clockKind + " && " + makeVarName(varRef.getReferenceName()) + ")";
+//			} 
+//		} else if(spec instanceof SpecExp) {
+//			SpecExp specification = (SpecExp) spec;
+//			if(specification.getOperator().equals(Operator.EQUALS)) {
+//				if (!isPrimitiveEqual(specification)) {
+//					throw new Error("New type of equal, replace with IFF, as in subParse?");
+//				}
+//				return "(" +  clockKind + " && " + subParse(specification, clockKind) + ")"; //only "right", not "left=right" because we have fluents, not variables in MTSA
+//			} else if(specification.getOperator().equals(Operator.NOT)) {
+//				String answer = subParse(specification, clockKind);
+//				return "(" +  clockKind + " && " + answer + ")"; //the NOT is processed in the subParse
+//			} else if(specification.getOperator().equals(Operator.PRIME)) {
+//				String answer = subParse(specification.getChildren()[0], clockKind);
+//				return "(" +  "X(!" + clockKind + " W (" + clockKind + " && " + answer + ")))";
+//			} else {
+//				String left = subParse(specification.getChildren()[0], clockKind);
+//				String right = subParse(specification.getChildren()[1], clockKind);
+//				return "(" +  left + MTSAOperator(specification.getOperator()) + right + ")";
+//			}
+//		} else if (spec instanceof PrimitiveValue) {
+//			PrimitiveValue val = (PrimitiveValue) spec;
+//			return "(" + val.getValue() + ")";
+//		} else {
+//			throw new Error("we need another type of Spec to parse");
+//		}		
+//	}
 		
 	private String MTSAOperator(Operator op) {
 		switch(op) {
@@ -135,8 +126,8 @@ public class MyConstraint {
 	private void buildJustice(Spec toParse, String clockKind, Integer propertyNumber) {
 		this.name = clockKind == "tock" ? "A_l" : "G_l";
 		this.name = this.name + propertyNumber.toString();
-		Pair<String, String> answer = initialParse(toParse, clockKind);
-		this.LTLProp = answer.getValue();
+		String answer = "(" + clockKind + " && " + subParse(toParse, clockKind) + ")";
+		this.LTLProp = answer;
 	}
 	
 	private void buildSafety(Spec toParse, String clockKind, Integer propertyNumber) {
@@ -149,21 +140,21 @@ public class MyConstraint {
 			//because modifying the constraints makes understanding them harder.
 			
 			//we put a comment with the original constraint so the translation is understandable
-			Pair<String, String> commentAux = initialParse(toParse, clockKind);
-			comment += "\n //"+commentAux.getValue() + "\n";
+			String commentAux = subParse(toParse, clockKind);
+			comment += "\n //"+commentAux + "\n";
 			
 			toParse = changeNotOrder(toParse, false);
 		}
 		
-		Pair<String, String> answer = initialParse(toParse, clockKind);
-		this.LTLProp = "[](" + clockKind + " -> " +answer.getValue()+")";
+		String answer = subParse(toParse, clockKind);
+		this.LTLProp = "[](" + clockKind + " -> " +answer+")";
 		this.LTLProp += comment;
 	}
 	
-	private void buildInitial(Spec toParse, String clockKind) {
-		Pair<String, String> answer = initialParse(toParse, clockKind);
-		this.name = answer.getKey();
-		this.LTLProp = "(!"+clockKind+" W "+answer.getValue()+")";
+	private void buildInitial(Spec toParse, String clockKind, Integer propertyNumber) {
+		String answer = subParse(toParse, clockKind);
+		this.name = " Initial_" + propertyNumber.toString();
+		this.LTLProp = "(!"+clockKind+" W ("+clockKind+" && "+answer+"))";
 	}
 	
 	private Spec changeNotOrder(Spec s, boolean insideNot) {
@@ -355,7 +346,7 @@ public class MyConstraint {
 				}
 				if(right instanceof SpecExp) {//if it's actually PRIME(rightVar)
 					rightAnswer = "X(!" + clockKind + " W (" + clockKind + " && (" + rightAnswer + ")))";
-					notLeft = "X(!" + clockKind + " W (" + clockKind + " && (" + notRight + ")))";
+					notRight = "X(!" + clockKind + " W (" + clockKind + " && (" + notRight + ")))";
 					hasNoNext = true;
 				}
 				if(hasNoNext) {
@@ -418,8 +409,13 @@ public class MyConstraint {
 	}
 	
 	private boolean isVarOrNextVar(Spec s) {
-		return (s instanceof VariableReference || (s instanceof SpecExp && 
-				((SpecExp) s).getOperator().equals(Operator.PRIME) && (((SpecExp) s).getChildren()[0] instanceof VariableReference)));
+		return (s instanceof VariableReference || isNextVar(s));
+	}
+	
+	private boolean isNextVar(Spec s) {
+		return (s instanceof SpecExp && 
+				((SpecExp) s).getOperator().equals(Operator.PRIME) 
+				&& (((SpecExp) s).getChildren()[0] instanceof VariableReference));
 	}
 	
 	private boolean hasNotNext(Spec s, boolean insideNot) {
@@ -442,6 +438,22 @@ public class MyConstraint {
 				return false;
 			case PRIME:
 				return insideNot;
+			case EQUALS:
+				if (!isPrimitiveEqual(e)) {
+					throw new Error("occurence of notPrimitiveEqual");
+				}
+				Spec left = e.getChildren()[0];
+				Spec right = e.getChildren()[1];
+				if (isNextVar(left) || isNextVar(right)) {
+					//Equals give notNext problems when we have var1=Next(var) or !(next(var)=anything)
+					if (isVarOrNextVar(left) && isVarOrNextVar(right)){
+						return true;
+					}else {
+						return insideNot;
+					}
+				}else {
+					return false;
+				}
 			default:
 				for (int i = 0; i < e.getChildren().length; i++) {
 					if (hasNotNext(e.getChildren()[i], insideNot)) {

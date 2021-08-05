@@ -34,6 +34,7 @@ public class SpectraToMTSATtranslator {
 	private static int justiceAssumptions = 0;
 	private static int safetyGuarantees = 0;
 	private static int justiceGuarantees = 0;
+	private static int initialConstraints = 0;
 	
 	public static void main(String[] args) throws ErrorsInSpectraException, SpectraTranslationException {
 
@@ -45,7 +46,7 @@ public class SpectraToMTSATtranslator {
 			name = name.substring(0, name.length() - 8);//remove .spectra
 			
 			//for debugging
-			//name = "V2-SelfParkingSmartCarLTL_965_AspectLTLAspect";
+			name = "ColorSortLTL2TAG_789_ColorSort";
 			
 			String specPath = "SYNTECH15/" + name + ".spectra";
 	
@@ -88,6 +89,7 @@ public class SpectraToMTSATtranslator {
 		justiceAssumptions = 0;
 		safetyGuarantees = 0;
 		justiceGuarantees = 0;
+		initialConstraints = 0;
 		
 		String filename = "./translated/SYNTECH15/" + name + ".fsp";
 		PrintWriter out;
@@ -261,9 +263,10 @@ public class SpectraToMTSATtranslator {
 			}
 			for (Constraint cons : p.getConstraints()) {
 				if (cons.isInitial()) {
-					MyConstraint myCons = new MyConstraint(cons, clock, -1); //the number is ignored for initial constraints
-					out.println(typeOfProp+" Initial_" + myCons.getName() + " = "+ myCons.getLTLProp());
-					initialNames.add("Initial_"+myCons.getName());
+					MyConstraint myCons = new MyConstraint(cons, clock, initialConstraints);
+					initialConstraints += 1;
+					out.println(typeOfProp + myCons.getName() + " = "+ myCons.getLTLProp());
+					initialNames.add(myCons.getName());
 				}
 			}
 		}
