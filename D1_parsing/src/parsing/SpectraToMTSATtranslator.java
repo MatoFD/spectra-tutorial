@@ -164,8 +164,9 @@ public class SpectraToMTSATtranslator {
 	}
 	
 	private static void printCompositionsAndGoal(PrintWriter out, GameInput gi) {
+		String initials = initialConstraints>0 ? "|| Initial_Values " : ""; 
 		out.println("\n\n||Domain_independent = (Full_Clock).\n"
-				+ "||Env = (Domain_independent || Initial_Values ||\n"
+				+ "||Env = (Domain_independent " + initials + "||\n"
 				+ "		"+getSafety() + "). //safety assumptions and guarantees\n"
 				+ "\n"
 				+ "controllerSpec Goal = {\n"
@@ -280,8 +281,11 @@ public class SpectraToMTSATtranslator {
 				}
 			}
 		}
-		String composition = initialNames.stream().collect(Collectors.joining(" || "));
-		out.println("||Initial_Values = ("+composition+").\n\n");		
+		if (initialConstraints > 0) { //if there are initial constraints
+			String composition = initialNames.stream().collect(Collectors.joining(" || "));
+			out.println("//=======Starting values=======\n"
+						+ "||Initial_Values = ("+composition+").\n\n");
+		}
 	}
 	
 	private static void printClock(PrintWriter out) {
@@ -302,8 +306,7 @@ public class SpectraToMTSATtranslator {
 				+ "fluent Tock = <tock, tick>\n"
 				+ "assert A_clock = (Tock)\n"
 				+ "\n"
-				+ "//==================LTL Properties=============================\n"
-				+ "//=======Starting values=======\n");
+				+ "//==================LTL Properties=============================\n");
 	}
 	
 	private static void printVars(PrintWriter out, Map<String, List<MyVar>> playersMyVars) {
