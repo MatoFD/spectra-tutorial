@@ -15,10 +15,10 @@ import tau.smlab.syntech.gameinput.spec.*;
 
 public class MyConstraint {
 
-	private String name;
-	private String LTLProp;
+	private List<Pair<String, String>> SubConstraints; // pairs <name, LTLProp>
 	
 	public MyConstraint(Constraint cons, String clockKind, int propertyNumber) {
+		this.SubConstraints = new ArrayList<Pair<String, String>>();
 		if (cons.isInitial()) {
 			buildInitial(cons.getSpec(), clockKind, propertyNumber);
 		} else if (cons.isSafety()) {
@@ -30,6 +30,19 @@ public class MyConstraint {
 		}
 	}
 
+	public MyConstraint(Spec spec, String clockKind, int propertyNumber, String type) {
+		this.SubConstraints = new ArrayList<Pair<String, String>>();
+		if (type.equals("initial")) {
+			buildInitial(spec, clockKind, propertyNumber);
+		} else if (type.equals("safety")) {
+			buildSafety(spec, clockKind, propertyNumber);
+		} else if  (type.equals("justice")) {
+			buildJustice(spec, clockKind, propertyNumber);
+		} else {
+			throw new Error("bas constraint type");
+		}
+	}
+	
 	public String subParse(Spec spec, String clockKind) {
 		if(spec instanceof VariableReference) {
 			VariableReference varRef = (VariableReference) spec;
@@ -75,40 +88,6 @@ public class MyConstraint {
 		}		
 	}
 		
-//	public String initialParse(Spec spec, String clockKind) {
-//		if(spec instanceof VariableReference) {
-//			VariableReference varRef = (VariableReference) spec;
-//			if(checkIfIsNextVar(varRef)) {
-//				throw new Error("should never happen, we removed PRIME translators.");
-//			}else {
-//				return "(" + clockKind + " && " + makeVarName(varRef.getReferenceName()) + ")";
-//			} 
-//		} else if(spec instanceof SpecExp) {
-//			SpecExp specification = (SpecExp) spec;
-//			if(specification.getOperator().equals(Operator.EQUALS)) {
-//				if (!isPrimitiveEqual(specification)) {
-//					throw new Error("New type of equal, replace with IFF, as in subParse?");
-//				}
-//				return "(" +  clockKind + " && " + subParse(specification, clockKind) + ")"; //only "right", not "left=right" because we have fluents, not variables in MTSA
-//			} else if(specification.getOperator().equals(Operator.NOT)) {
-//				String answer = subParse(specification, clockKind);
-//				return "(" +  clockKind + " && " + answer + ")"; //the NOT is processed in the subParse
-//			} else if(specification.getOperator().equals(Operator.PRIME)) {
-//				String answer = subParse(specification.getChildren()[0], clockKind);
-//				return "(" +  "X(!" + clockKind + " W (" + clockKind + " && " + answer + ")))";
-//			} else {
-//				String left = subParse(specification.getChildren()[0], clockKind);
-//				String right = subParse(specification.getChildren()[1], clockKind);
-//				return "(" +  left + MTSAOperator(specification.getOperator()) + right + ")";
-//			}
-//		} else if (spec instanceof PrimitiveValue) {
-//			PrimitiveValue val = (PrimitiveValue) spec;
-//			return "(" + val.getValue() + ")";
-//		} else {
-//			throw new Error("we need another type of Spec to parse");
-//		}		
-//	}
-		
 	private String MTSAOperator(Operator op) {
 		switch(op) {
 			case IMPLIES:
@@ -125,37 +104,42 @@ public class MyConstraint {
 	}
 	
 	private void buildJustice(Spec toParse, String clockKind, Integer propertyNumber) {
-		this.name = clockKind == "tock" ? "A_l" : "G_l";
-		this.name = this.name + propertyNumber.toString();
-		String answer = "(" + clockKind + " && " + subParse(toParse, clockKind) + ")";
-		this.LTLProp = answer;
+		String name = clockKind == "tock" ? "A_l" : "G_l";
+		name = name + propertyNumber.toString();
+		String LTLProp = "(" + clockKind + " && " + subParse(toParse, clockKind) + ")";
+		this.SubConstraints.add(new Pair<String, String>(name, LTLProp));
 	}
 	
 	private void buildSafety(Spec toParse, String clockKind, Integer propertyNumber) {
-		String comment = "";
-		this.name = clockKind == "tock" ? "A" : "G";
-		this.name = this.name + propertyNumber.toString();
 		//only in safety constraints we have problems to translate NOT(Next(Subspec))
 		if (hasNotNext(toParse, false)) {
 			//we check if hasNotNext so we only modify the constraints when needed.
-			//because modifying the constraints makes understanding them harder.
-			
-			//we put a comment with the original constraint so the translation is understandable
-			String commentAux = subParse(toParse, clockKind);
-			comment += "\n //"+commentAux + "\n";
-			
+			//because modifying the constraints makes understanding them harder.			
 			toParse = changeNotOrder(toParse, false);
 		}
 		
-		String answer = subParse(toParse, clockKind);
-		this.LTLProp = "[](" + clockKind + " -> " +answer+")";
-		this.LTLProp += comment;
+		while ((toParse instanceof SpecExp) &&
+				(((SpecExp) toParse).getOperator().equals(Operator.AND))) {
+			String name = clockKind == "tock" ? "A" : "G";
+			name = name + propertyNumber.toString();
+			propertyNumber += 1;
+			SpecExp exp = (SpecExp) toParse;
+			Spec left = exp.getChildren()[0];
+			toParse = exp.getChildren()[1];
+			String LTLProp = subParse(left, clockKind);
+			this.SubConstraints.add(new Pair<String, String>(name, "[](" + clockKind + " -> " +LTLProp+")"));
+		}
+		
+		String name = clockKind == "tock" ? "A" : "G";
+		name = name + propertyNumber.toString();
+		String LTLProp = subParse(toParse, clockKind);
+		this.SubConstraints.add(new Pair<String, String>(name, "[](" + clockKind + " -> " +LTLProp+")"));
 	}
 	
 	private void buildInitial(Spec toParse, String clockKind, Integer propertyNumber) {
-		String answer = subParse(toParse, clockKind);
-		this.name = " Initial_" + propertyNumber.toString();
-		this.LTLProp = "(!"+clockKind+" W ("+clockKind+" && "+answer+"))";
+		String name = " Initial_" + propertyNumber.toString();
+		String LTLProp = "(!"+clockKind+" W ("+clockKind+" && "+subParse(toParse, clockKind)+"))";
+		this.SubConstraints.add(new Pair<String, String>(name, LTLProp));
 	}
 	
 	private Spec changeNotOrder(Spec s, boolean insideNot) {
@@ -473,12 +457,8 @@ public class MyConstraint {
 	private String makeVarName(String name) {
 		return name.toUpperCase().replaceAll("\\.", "_");
 	}
-	
-	public String getLTLProp() {
-		return LTLProp;
-	}
 
-	public String getName() {
-		return name;
+	public List<Pair<String, String>> getSubConstraints() {
+		return SubConstraints;
 	}
 }

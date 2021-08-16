@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.*;
+import org.eclipse.xtext.xbase.lib.Pair;
 
 import tau.smlab.syntech.gameinput.model.Constraint;
 import tau.smlab.syntech.gameinput.model.GameInput;
@@ -230,14 +231,20 @@ public class SpectraToMTSATtranslator {
 			for (Constraint cons : p.getConstraints()) {
 				if (cons.isSafety()) {
 					MyConstraint myCons = new MyConstraint(cons,"tick",safetyGuarantees);
-					safetyGuarantees += 1;
-					out.println("ltl_property " + myCons.getName() + " = "+ myCons.getLTLProp());
-					out.println("minimal ||"+ myCons.getName() + "_min = "+ myCons.getName());
+					safetyGuarantees += myCons.getSubConstraints().size();
+					out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
+					for (Pair<String, String> subCons : myCons.getSubConstraints()) {
+						out.println("ltl_property " + subCons.getKey() + " = "+ subCons.getValue());
+						out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
+					}
 				} else if(cons.isJustice()) {
 					MyConstraint myCons = new MyConstraint(cons,"tick",justiceGuarantees);
-					justiceGuarantees += 1;
-					out.println("assert " + myCons.getName() + " = "+ myCons.getLTLProp());
-					out.println("minimal ||"+ myCons.getName() + "_min = "+ myCons.getName());
+					justiceGuarantees += myCons.getSubConstraints().size();
+					out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
+					for (Pair<String, String> subCons : myCons.getSubConstraints()) {
+						out.println("assert " + subCons.getKey() + " = "+ subCons.getValue());
+						out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
+					}
 				}
 				out.println("");
 			}
@@ -253,14 +260,20 @@ public class SpectraToMTSATtranslator {
 		for (Constraint cons : gi.getEnv().getConstraints()) {
 			if (cons.isSafety()) {
 				MyConstraint myCons = new MyConstraint(cons,"tock",safetyAssumptions);
-				safetyAssumptions += 1;
-				out.println("constraint " + myCons.getName() + " = "+ myCons.getLTLProp());
-				out.println("minimal ||"+ myCons.getName() + "_min = "+ myCons.getName());
+				safetyAssumptions += myCons.getSubConstraints().size();
+				out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
+				for (Pair<String, String> subCons : myCons.getSubConstraints()) {
+					out.println("constraint " + subCons.getKey() + " = "+ subCons.getValue());
+					out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
+				}
 			} else if(cons.isJustice()) {
 				MyConstraint myCons = new MyConstraint(cons,"tock",justiceAssumptions);
-				justiceAssumptions += 1;
-				out.println("assert " + myCons.getName() + " = "+ myCons.getLTLProp());
-				out.println("minimal ||"+ myCons.getName() + "_min = "+ myCons.getName());
+				justiceAssumptions += myCons.getSubConstraints().size();
+				out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
+				for (Pair<String, String> subCons : myCons.getSubConstraints()) {
+					out.println("assert " + subCons.getKey() + " = "+ subCons.getValue());
+					out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
+				}
 			}
 			out.println("");
 		}
@@ -279,10 +292,13 @@ public class SpectraToMTSATtranslator {
 			for (Constraint cons : p.getConstraints()) {
 				if (cons.isInitial()) {
 					MyConstraint myCons = new MyConstraint(cons, clock, initialConstraints);
-					initialConstraints += 1;
-					out.println(typeOfProp + myCons.getName() + " = "+ myCons.getLTLProp());
-					out.println("minimal ||"+ myCons.getName() + "_min = "+ myCons.getName());
-					initialNames.add(myCons.getName()+"_min");
+					initialConstraints += myCons.getSubConstraints().size();
+					out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
+					for (Pair<String, String> subCons : myCons.getSubConstraints()) {
+						out.println(typeOfProp + subCons.getKey() + " = "+ subCons.getValue());
+						out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
+						initialNames.add(subCons.getKey()+"_min");
+					}
 				}
 			}
 		}
