@@ -191,7 +191,7 @@ public class SpectraToMTSATtranslator {
 		List<String> justice = new ArrayList<String>();
 		String extra = isForAssert ? "[]<>" : "";
 		for(Integer i=0; i<justiceGuarantees; i++) {
-			justice.add(extra+"G_l"+i.toString()+"_min");
+			justice.add(extra+"G_l"+i.toString());
 		}
 		if(isForAssert) {
 			return justice.stream().collect(Collectors.joining(" && "));
@@ -204,7 +204,7 @@ public class SpectraToMTSATtranslator {
 		List<String> justice = new ArrayList<String>();
 		String extra = isForAssert ? "[]<>" : "";
 		for(Integer i=0; i<justiceAssumptions; i++) {
-			justice.add(extra+"A_l"+i.toString()+"_min");
+			justice.add(extra+"A_l"+i.toString());
 		}
 		justice.add("A_clock");
 		if(isForAssert) {
@@ -225,6 +225,10 @@ public class SpectraToMTSATtranslator {
 		return safety.stream().collect(Collectors.joining(" || "));
 	}
 	
+	private static String minimal(String prop) {
+		return "minimal ||"+ prop + "_min = "+ prop + ".";
+	}
+	
 	private static void printGuarantees(PrintWriter out, GameInput gi) { 
 		List<Player> guaranteePlayers = Arrays.asList(gi.getSys(), gi.getAux());
 		for (Player p : guaranteePlayers) {
@@ -235,7 +239,7 @@ public class SpectraToMTSATtranslator {
 					out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
 					for (Pair<String, String> subCons : myCons.getSubConstraints()) {
 						out.println("ltl_property " + subCons.getKey() + " = "+ subCons.getValue());
-						out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
+						out.println(minimal(subCons.getKey()));
 					}
 				} else if(cons.isJustice()) {
 					MyConstraint myCons = new MyConstraint(cons,"tick",justiceGuarantees);
@@ -243,7 +247,6 @@ public class SpectraToMTSATtranslator {
 					out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
 					for (Pair<String, String> subCons : myCons.getSubConstraints()) {
 						out.println("assert " + subCons.getKey() + " = "+ subCons.getValue());
-						out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
 					}
 				}
 				out.println("");
@@ -251,7 +254,7 @@ public class SpectraToMTSATtranslator {
 		}
 		if(justiceGuarantees == 0) {//if there are no justice guarantees, add a trivial one
 			out.println("fluent True = <tick, tock>");
-			out.println("assert G_l0_min = (True || !True)");
+			out.println("assert G_l0 = (True || !True)");
 			justiceGuarantees += 1;
 		}
 	}
@@ -264,7 +267,7 @@ public class SpectraToMTSATtranslator {
 				out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
 				for (Pair<String, String> subCons : myCons.getSubConstraints()) {
 					out.println("constraint " + subCons.getKey() + " = "+ subCons.getValue());
-					out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
+					out.println(minimal(subCons.getKey()));
 				}
 			} else if(cons.isJustice()) {
 				MyConstraint myCons = new MyConstraint(cons,"tock",justiceAssumptions);
@@ -272,7 +275,6 @@ public class SpectraToMTSATtranslator {
 				out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
 				for (Pair<String, String> subCons : myCons.getSubConstraints()) {
 					out.println("assert " + subCons.getKey() + " = "+ subCons.getValue());
-					out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
 				}
 			}
 			out.println("");
@@ -296,7 +298,7 @@ public class SpectraToMTSATtranslator {
 					out.println("//property divided into " + myCons.getSubConstraints().size() + " subproperties.");
 					for (Pair<String, String> subCons : myCons.getSubConstraints()) {
 						out.println(typeOfProp + subCons.getKey() + " = "+ subCons.getValue());
-						out.println("minimal ||"+ subCons.getKey() + "_min = "+ subCons.getKey());
+						out.println(minimal(subCons.getKey()));
 						initialNames.add(subCons.getKey()+"_min");
 					}
 				}
